@@ -1,0 +1,102 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.2'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'maven-publish'
+}
+
+group = 'com.fyntrac'
+version = '0.0.1-SNAPSHOT'
+def projectname = 'data'
+
+def gituser = System.getenv('GIT_USER')  // Your GitHub username
+def gittoken = System.getenv('GIT_KEY') // Ensure you set this in your environment variables for security
+
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java  // Publish the Java component
+			groupId = 'com.fyntrac'  // Set your group ID
+			artifactId = '${projectname}'  // Set your artifact ID
+			version = project.version  // Set your version
+		}
+	}
+	repositories {
+		maven {
+			url = uri("https://maven.pkg.github.com/${gituser}/subledger")  // Use the variable for username
+			credentials {
+				username = gituser  // Use the variable for username
+				password = gittoken  // Use the variable for token
+			}
+		}
+	}
+}
+
+repositories {
+	mavenCentral()  // Central Maven repository
+	maven {
+		url = uri("https://maven.pkg.github.com/${gituser}/subledger")  // Use an environment variable for username
+		credentials {
+			username = gituser  // Use the variable for username
+			password = gittoken  // Use the variable for token
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'com.fyntrac:commons:0.0.1-SNAPSHOT'
+	implementation 'org.apache.poi:poi:5.4.1'
+	// implementation 'org.apache.poi:poi-ooxml:5.3.0'
+	implementation 'org.apache.poi:poi-ooxml:5.4.1'
+	implementation 'org.apache.commons:commons-lang3:3.12.0'
+	implementation 'org.apache.commons:commons-csv:1.10.0'
+	implementation 'commons-lang:commons-lang:2.6'
+	implementation 'joda-time:joda-time:2.12.2'
+
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+	implementation 'net.spy:spymemcached:2.12.3'
+	runtimeOnly 'com.h2database:h2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+}
+
+bootJar {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('test') {
+	if (project.hasProperty('test.skip') && project.property('test.skip') == 'true') {
+		// Include only DataloaderApplicationTests and exclude all others
+		include '**/DataApplicationTests.class'
+	}
+	useJUnitPlatform()
+
+	if (project.hasProperty('testData')) {
+		systemProperty 'testData', project.testData
+	}
+
+	// Enable debug when system property is passed
+	if (project.hasProperty('debugTest')) {
+		jvmArgs "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
+	}
+
+
+}
+

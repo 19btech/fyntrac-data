@@ -1,0 +1,47 @@
+services:
+  dataloader:
+    image: ghcr.io/19btech/fyntrac/docker/dataloader:latest
+    container_name: fyntrac-dataloader
+    working_dir: /dataloader
+    ports:
+      - "8081:8089"  # HostPort:ContainerPort
+    entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.reserv.dataloader.DataloaderApplication"]
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+
+  model:
+    image: ghcr.io/19btech/fyntrac/docker/model:latest
+    container_name: fyntrac-model
+    working_dir: /model
+    ports:
+      - "8082:8089"
+    entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.model.ModelApplication"]
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+    depends_on:
+      - dataloader
+
+  gl:
+    image: ghcr.io/19btech/fyntrac/docker/gl:latest
+    container_name: fyntrac-gl
+    working_dir: /gl
+    ports:
+      - "8083:8089"
+    entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.gl.GlApplication"]
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+    depends_on:
+      - model
+
+  reporting:
+    image: ghcr.io/19btech/fyntrac/docker/reporting:latest
+    container_name: fyntrac-reporting
+    working_dir: /reporting
+    ports:
+      - "8084:8089"
+    entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.reporting.ReportingApplication"]
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+    depends_on:
+      - gl
+
