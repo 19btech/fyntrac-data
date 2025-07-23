@@ -93,7 +93,11 @@ public class ExcelTestDriver {
         // this.dataService.setTenantId(tenantId);
         this.model=null;
         String testingKey = String.format("TesingKey%d", System.currentTimeMillis());
-        memcachedRepository.putInCache("Test", "Testing Started", 200);
+        memcachedRepository.putInCache(testingKey, "Testing Started", 200);
+        // Optional: wait a bit to ensure Memcached is ready (only needed for test environment)
+        Thread.sleep(5000); // Increase if your system is slow
+        String testValue = (String) memcachedRepository.getFromCache(testingKey);
+        assertNotNull(testValue, "Memcached did not return value after putInCache");
     }
 
     @Test

@@ -11,5 +11,11 @@ db.Tenant.insertMany([
   {
     _id: ObjectId("67171f8adcbd9e7e9a527690"),
     name: "TTwo"
+  },
+  {
+    "_id": {
+      "$oid": "687ee8c4fcbb23ffa95b4ad3"
+    },
+    "name": "Test"
   }
 ]);

@@ -1,16 +1,58 @@
 services:
+  mongodb:
+    image: mongo:6.0.8  # Pinned version instead of latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: "R3s3rv#313"
+      MONGO_INITDB_DATABASE: master
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fyntrac-network
+
+  memcached:
+    image: memcached:1.6.18-alpine  # Pinned version
+    container_name: memcached
+    ports:
+      - "11211:11211"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - fyntrac-network
+
   dataloader:
-    image: ghcr.io/19btech/fyntrac/docker/dataloader:latest
+    image: ghcr.io/19btech/fyntrac/docker/dataloader:0.0.1-snapshot
     container_name: fyntrac-dataloader
     working_dir: /dataloader
     ports:
-      - "8081:8089"  # HostPort:ContainerPort
+      - "8081:8089"
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.reserv.dataloader.DataloaderApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
+      SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+    depends_on:
+      memcached:
+        condition: service_started
+    networks:
+      - fyntrac-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
 
   model:
-    image: ghcr.io/19btech/fyntrac/docker/model:latest
+    image: ghcr.io/19btech/fyntrac/docker/model:0.0.1-snapshot
     container_name: fyntrac-model
     working_dir: /model
     ports:
@@ -18,11 +60,15 @@ services:
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.model.ModelApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
+      SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
     depends_on:
-      - dataloader
+      dataloader:
+        condition: service_started
+    networks:
+      - fyntrac-network
 
   gl:
-    image: ghcr.io/19btech/fyntrac/docker/gl:latest
+    image: ghcr.io/19btech/fyntrac/docker/gl:0.0.1-snapshot
     container_name: fyntrac-gl
     working_dir: /gl
     ports:
@@ -30,11 +76,15 @@ services:
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.gl.GlApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
+      SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
     depends_on:
-      - model
+      model:
+        condition: service_started
+    networks:
+      - fyntrac-network
 
   reporting:
-    image: ghcr.io/19btech/fyntrac/docker/reporting:latest
+    image: ghcr.io/19btech/fyntrac/docker/reporting:0.0.1-snapshot
     container_name: fyntrac-reporting
     working_dir: /reporting
     ports:
@@ -43,5 +93,25 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
     depends_on:
-      - gl
+      gl:
+        condition: service_started
+    networks:
+      - fyntrac-network
 
+  web:
+    image: ghcr.io/19btech/fyntrac/docker/web:latest
+    container_name: fyntrac-web
+    ports:
+      - "3030:3030"
+    depends_on:
+      reporting:
+        condition: service_started
+    networks:
+      - fyntrac-network
+networks:
+  fyntrac-network:
+    external: true
+    name: pulsar_network  # Connecting to existing Pulsar network
+
+volumes:
+  mongodb-data:

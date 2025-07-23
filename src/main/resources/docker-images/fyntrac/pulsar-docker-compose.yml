@@ -1,18 +1,24 @@
 services:
   pulsar:
-    image: "apachepulsar/pulsar:latest"
+    image: "apachepulsar/pulsar:3.3.4"
     container_name: pulsar
     command: bin/pulsar standalone
     environment:
       PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
+      PULSAR_PREFIX_enableTransaction: "true"
     ports:
       - "6650:6650"
       - "8080:8080"
     restart: unless-stopped
     volumes:
       - pulsar-data:/pulsar/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/admin/v2/brokers/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - pulsar
+      - fyntrac-network
 
   pulsar-manager:
     image: "apachepulsar/pulsar-manager:v0.4.0"
@@ -21,14 +27,19 @@ services:
       - "9527:9527"
       - "7750:7750"
     depends_on:
-      - pulsar
+      pulsar:
+        condition: service_healthy
     environment:
       SPRING_CONFIGURATION_FILE: /pulsar-manager/pulsar-manager/application.properties
+      PULSAR_MANAGER_DATABASE: h2
+      PULSAR_MANAGER_USERNAME: admin
+      PULSAR_MANAGER_PASSWORD: apachepulsar
     networks:
-      - pulsar
+      - fyntrac-network
 
 networks:
-  pulsar:
+  fyntrac-network:
+    name: pulsar_network
     driver: bridge
 
 volumes:
