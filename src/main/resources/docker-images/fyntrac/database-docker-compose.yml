@@ -1,0 +1,39 @@
+services:
+  mongodb:
+    image: mongo:6.0.8  # Pinned version instead of latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: "R3s3rv#313"
+      MONGO_INITDB_DATABASE: master
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fyntrac-network
+
+  memcached:
+    image: memcached:1.6.18-alpine  # Pinned version
+    container_name: memcached
+    ports:
+      - "11211:11211"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - fyntrac-network
+networks:
+  fyntrac-network:
+    external: true
+    name: pulsar_network  # Connecting to existing Pulsar network
+
+volumes:
+  mongodb-data:

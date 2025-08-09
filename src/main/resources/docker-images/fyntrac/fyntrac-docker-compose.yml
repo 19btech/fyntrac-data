@@ -1,48 +1,15 @@
 services:
-  mongodb:
-    image: mongo:6.0.8  # Pinned version instead of latest
-    container_name: mongodb
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: "R3s3rv#313"
-      MONGO_INITDB_DATABASE: master
-    volumes:
-      - mongodb-data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
-    ports:
-      - "27017:27017"
-    healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - fyntrac-network
-
-  memcached:
-    image: memcached:1.6.18-alpine  # Pinned version
-    container_name: memcached
-    ports:
-      - "11211:11211"
-    depends_on:
-      mongodb:
-        condition: service_healthy
-    networks:
-      - fyntrac-network
 
   dataloader:
-    image: ghcr.io/19btech/fyntrac/docker/dataloader:0.0.1-snapshot
+    image: ghcr.io/19btech/fyntrac/docker/dataloader:0.0.2-SNAPSHOT
     container_name: fyntrac-dataloader
     working_dir: /dataloader
     ports:
-      - "8081:8089"
+      - "8081:8081"
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.reserv.dataloader.DataloaderApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
-    depends_on:
-      memcached:
-        condition: service_started
     networks:
       - fyntrac-network
     deploy:
@@ -52,11 +19,11 @@ services:
           memory: 1G
 
   model:
-    image: ghcr.io/19btech/fyntrac/docker/model:0.0.1-snapshot
+    image: ghcr.io/19btech/fyntrac/docker/model:0.0.2-SNAPSHOT
     container_name: fyntrac-model
     working_dir: /model
     ports:
-      - "8082:8089"
+      - "8082:8082"
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.model.ModelApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
@@ -68,11 +35,11 @@ services:
       - fyntrac-network
 
   gl:
-    image: ghcr.io/19btech/fyntrac/docker/gl:0.0.1-snapshot
+    image: ghcr.io/19btech/fyntrac/docker/gl:0.0.2-SNAPSHOT
     container_name: fyntrac-gl
     working_dir: /gl
     ports:
-      - "8083:8089"
+      - "8083:8083"
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.gl.GlApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
@@ -84,11 +51,11 @@ services:
       - fyntrac-network
 
   reporting:
-    image: ghcr.io/19btech/fyntrac/docker/reporting:0.0.1-snapshot
+    image: ghcr.io/19btech/fyntrac/docker/reporting:0.0.2-SNAPSHOT
     container_name: fyntrac-reporting
     working_dir: /reporting
     ports:
-      - "8084:8089"
+      - "8084:8084"
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.reporting.ReportingApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test

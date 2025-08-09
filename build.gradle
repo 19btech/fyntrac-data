@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.fyntrac'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.2-SNAPSHOT'
 def projectname = 'data'
 
 def gituser = System.getenv('GIT_USER')  // Your GitHub username

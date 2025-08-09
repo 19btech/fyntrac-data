@@ -20,6 +20,7 @@ services:
     networks:
       - fyntrac-network
 
+
   pulsar-manager:
     image: "apachepulsar/pulsar-manager:v0.4.0"
     container_name: pulsar-manager
@@ -41,6 +42,7 @@ networks:
   fyntrac-network:
     name: pulsar_network
     driver: bridge
-
+  pulsar_network:
+    external: true
 volumes:
   pulsar-data:

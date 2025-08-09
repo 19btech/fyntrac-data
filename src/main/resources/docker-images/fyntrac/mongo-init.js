@@ -1,21 +1,26 @@
-// Create a new collection and insert data into it
-db = db.getSiblingDB('master');  // Switch to the 'master' database
-db.createCollection('Tenant');  // Create a collection named 'Tenant'
+// Switch to 'master' DB
+db = db.getSiblingDB('master');
 
-// Insert data into the 'Tenant' collection with specified _id values
-db.Tenant.insertMany([
-  {
-    _id: ObjectId("67171f54dcbd9e7e9a52768f"),
-    name: "TOne"
-  },
-  {
-    _id: ObjectId("67171f8adcbd9e7e9a527690"),
-    name: "TTwo"
-  },
-  {
-    "_id": {
-      "$oid": "687ee8c4fcbb23ffa95b4ad3"
-    },
-    "name": "Test"
-  }
-]);
+// Ensure collection exists
+if (!db.getCollectionNames().includes('Tenant')) {
+    db.createCollection('Tenant');
+}
+
+// Insert or upsert documents
+db.Tenant.updateOne(
+    { _id: ObjectId("67171f54dcbd9e7e9a52768f") },
+    { $set: { name: "TOne" } },
+    { upsert: true }
+);
+
+db.Tenant.updateOne(
+    { _id: ObjectId("67171f8adcbd9e7e9a527690") },
+    { $set: { name: "TTwo" } },
+    { upsert: true }
+);
+
+db.Tenant.updateOne(
+    { _id: ObjectId("687ee8c4fcbb23ffa95b4ad3") },
+    { $set: { name: "Test" } },
+    { upsert: true }
+);
