@@ -9,11 +9,11 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 log_info() {
-  echo "${GREEN}[INFO] $1${NC}"
+  printf "${GREEN}[INFO] %s${NC}\n" "$1"
 }
 
 log_error() {
-  echo "${RED}[ERROR] $1${NC}"
+  printf "${RED}[ERROR] %s${NC}\n" "$1"
 }
 
 # Check minimum arguments
@@ -26,46 +26,50 @@ fi
 VERSION="$1"
 shift
 
-# Default version if empty
+# Default version
 if [ -z "$VERSION" ]; then
   VERSION="0.0.2-SNAPSHOT"
 fi
 
 log_info "Using version: $VERSION"
 
-# Component → Container mapping
-container_names=("dataloader" "model" "gl" "reporting" "web")
-container_values=("fyntrac-dataloader" "fyntrac-model" "fyntrac-gl" "fyntrac-reporting" "fyntrac-web")
+# Container and image maps (using functions instead of declare -A)
+get_container_name() {
+  case "$1" in
+    dataloader) echo "fyntrac-dataloader" ;;
+    model) echo "fyntrac-model" ;;
+    gl) echo "fyntrac-gl" ;;
+    reporting) echo "fyntrac-reporting" ;;
+    web) echo "fyntrac-web" ;;
+    *) echo "" ;;
+  esac
+}
 
-# Component → Image mapping
-image_values=(
-  "ghcr.io/19btech/fyntrac/docker/dataloader:${VERSION}"
-  "ghcr.io/19btech/fyntrac/docker/model:${VERSION}"
-  "ghcr.io/19btech/fyntrac/docker/gl:${VERSION}"
-  "ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}"
-  "ghcr.io/19btech/fyntrac/docker/web:latest"
-)
+get_image_name() {
+  case "$1" in
+    dataloader) echo "ghcr.io/19btech/fyntrac/docker/dataloader:${VERSION}" ;;
+    model) echo "ghcr.io/19btech/fyntrac/docker/model:${VERSION}" ;;
+    gl) echo "ghcr.io/19btech/fyntrac/docker/gl:${VERSION}" ;;
+    reporting) echo "ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}" ;;
+    web) echo "ghcr.io/19btech/fyntrac/docker/web:latest" ;;
+    *) echo "" ;;
+  esac
+}
 
 # Determine components
 if [ "$#" -eq 0 ]; then
-  log_error "No components specified after version."
+  log_error "No components specified after version. Usage: $0 version [component1] [component2] ... | all"
   exit 1
 fi
 
-if [ "$1" == "all" ]; then
-  components=("${container_names[@]}")
+if [ "$1" = "all" ]; then
+  components=("dataloader" "model" "gl" "reporting" "web")
 else
   components=()
   for arg in "$@"; do
-    found=false
-    for cname in "${container_names[@]}"; do
-      if [ "$arg" == "$cname" ]; then
-        components+=("$arg")
-        found=true
-        break
-      fi
-    done
-    if [ "$found" = false ]; then
+    if [ -n "$(get_container_name "$arg")" ]; then
+      components+=("$arg")
+    else
       log_error "Unknown component: $arg"
       exit 1
     fi
@@ -86,47 +90,35 @@ fi
 # Stop and remove selected containers
 log_info "Stopping and removing containers..."
 for comp in "${components[@]}"; do
-  for i in "${!container_names[@]}"; do
-    if [ "$comp" == "${container_names[$i]}" ]; then
-      container="${container_values[$i]}"
-      if docker rm -f "$container" 2>/dev/null; then
-        log_info "Removed container: $container"
-      else
-        log_info "Container not found or already removed: $container"
-      fi
-    fi
-  done
+  container=$(get_container_name "$comp")
+  if docker rm -f "$container" 2>/dev/null; then
+    log_info "Removed container: $container"
+  else
+    log_info "Container not found or already removed: $container"
+  fi
 done
 
 # Remove selected images
 log_info "Removing old images..."
 for comp in "${components[@]}"; do
-  for i in "${!container_names[@]}"; do
-    if [ "$comp" == "${container_names[$i]}" ]; then
-      image="${image_values[$i]}"
-      if docker rmi -f "$image" 2>/dev/null; then
-        log_info "Removed image: $image"
-      else
-        log_info "Image not found or already removed: $image"
-      fi
-    fi
-  done
+  image=$(get_image_name "$comp")
+  if docker rmi -f "$image" 2>/dev/null; then
+    log_info "Removed image: $image"
+  else
+    log_info "Image not found or already removed: $image"
+  fi
 done
 
 # Pull latest images
 log_info "Pulling latest images..."
 for comp in "${components[@]}"; do
-  for i in "${!container_names[@]}"; do
-    if [ "$comp" == "${container_names[$i]}" ]; then
-      image="${image_values[$i]}"
-      if docker pull "$image"; then
-        log_info "Successfully pulled: $image"
-      else
-        log_error "Failed to pull image: $image"
-        exit 1
-      fi
-    fi
-  done
+  image=$(get_image_name "$comp")
+  if docker pull "$image"; then
+    log_info "Successfully pulled: $image"
+  else
+    log_error "Failed to pull image: $image"
+    exit 1
+  fi
 done
 
 # Start selected services
@@ -137,3 +129,4 @@ else
   log_error "Failed to start containers. Check docker compose logs."
   exit 1
 fi
+
