@@ -1,5 +1,6 @@
-services:
+version: '3.8'  # Explicit version for compatibility (healthchecks, resources, networks)
 
+services:
   dataloader:
     image: ghcr.io/19btech/fyntrac/docker/dataloader:0.0.2-SNAPSHOT
     container_name: fyntrac-dataloader
@@ -10,13 +11,19 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
+      # Add Memcached: SPRING_CACHE_TYPE=simple (or caffeine/redis if using Memcached)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]  # Assumes Spring Actuator; adjust if no /actuator
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s  # Java apps take time to boot
+    cpus: '1'  # Standalone equivalent of deploy.resources (for single-node)
+    mem_limit: 1G
+    restart: unless-stopped
     networks:
       - fyntrac-network
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
 
   model:
     image: ghcr.io/19btech/fyntrac/docker/model:0.0.2-SNAPSHOT
@@ -28,9 +35,17 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]  # Assumes Spring Actuator
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     depends_on:
       dataloader:
-        condition: service_started
+        condition: service_healthy  # Waits for dataloader to be healthy
+    restart: unless-stopped
     networks:
       - fyntrac-network
 
@@ -44,9 +59,17 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]  # Assumes Spring Actuator
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     depends_on:
       model:
-        condition: service_started
+        condition: service_healthy  # Waits for model to be healthy
+    restart: unless-stopped
     networks:
       - fyntrac-network
 
@@ -59,9 +82,18 @@ services:
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.reporting.ReportingApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
+      # Add Pulsar if needed: SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]  # Assumes Spring Actuator
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     depends_on:
       gl:
-        condition: service_started
+        condition: service_healthy  # Waits for gl to be healthy
+    restart: unless-stopped
     networks:
       - fyntrac-network
 
@@ -70,15 +102,26 @@ services:
     container_name: fyntrac-web
     ports:
       - "3030:3030"
+    # No entrypoint: Assumes image default (e.g., npm start for Node.js web app)
+    # environment:  # Omitted if no vars needed; uncomment and add below if required
+    #   REACT_APP_API_URL: http://reporting:8084  # Example: Points to reporting service (use service name for internal access)
+    #   REACT_APP_PULSAR_URL: pulsar://pulsar:6650  # If web needs Pulsar
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]  # Assumes /health endpoint; adjust to / or port check if none
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s  # Web apps boot faster
     depends_on:
       reporting:
-        condition: service_started
+        condition: service_healthy  # Waits for reporting to be healthy
+    restart: unless-stopped
     networks:
       - fyntrac-network
+
 networks:
   fyntrac-network:
-    external: true
-    name: pulsar_network  # Connecting to existing Pulsar network
+    driver: bridge
+    external: true  # Connects to existing manually created network (Pulsar/MongoDB/etc.)
 
-volumes:
-  mongodb-data:
+# No volumes needed here (add if apps require persistent data, e.g., - app-logs:/app/logs)

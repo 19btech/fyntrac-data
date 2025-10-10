@@ -20,7 +20,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-
 public class OutputSheetValidator {
 
     private static final Logger log = LoggerFactory.getLogger(OutputSheetValidator.class);
@@ -60,6 +59,7 @@ public class OutputSheetValidator {
                     }
 
                     Query query = buildQuery(jsonQuery, columns, sortMap);
+                    System.out.printf("Sheet [%s], validation Query[%s]", sheet.getSheetName(), query.toString());
                     List<Document> actualResults = mongoTemplate.find(query, Document.class, collectionName);
 
                     List<Map<String, Object>> expectedRows = new ArrayList<>();

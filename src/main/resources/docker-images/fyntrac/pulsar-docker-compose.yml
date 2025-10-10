@@ -2,7 +2,7 @@ services:
   pulsar:
     image: "apachepulsar/pulsar:3.3.4"
     container_name: pulsar
-    command: bin/pulsar standalone
+    command: bin/pulsar standalone  # Note: 'standalone' (lowercase) is correct for Pulsar
     environment:
       PULSAR_MEM: " -Xms512m -Xmx512m -XX:MaxDirectMemorySize=1g"
       PULSAR_PREFIX_enableTransaction: "true"
@@ -18,8 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - fyntrac-network
-
+      - fyntrac-network  # This will now use the exact external name
 
   pulsar-manager:
     image: "apachepulsar/pulsar-manager:v0.4.0"
@@ -36,13 +35,12 @@ services:
       PULSAR_MANAGER_USERNAME: admin
       PULSAR_MANAGER_PASSWORD: apachepulsar
     networks:
-      - fyntrac-network
+      - fyntrac-network  # Both services on the same network for communication
 
 networks:
   fyntrac-network:
-    name: pulsar_network
     driver: bridge
-  pulsar_network:
-    external: true
+    external: true  # Now points to your manually created network
+
 volumes:
-  pulsar-data:
+  pulsar-data:  # Named volume (no driver needed for local)
