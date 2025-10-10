@@ -123,7 +123,7 @@ done
 
 # Start selected services
 log_info "Starting containers using $COMPOSE_FILE..."
-if docker compose -f "$COMPOSE_FILE" up -d "${components[@]}"; then
+if docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate --no-build --pull always "${components[@]}"; then
   log_info "Containers started successfully."
 else
   log_error "Failed to start containers. Check docker compose logs."
