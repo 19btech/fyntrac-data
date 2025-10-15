@@ -112,6 +112,10 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s  # Web apps boot faster
+    environment:
+      NEXT_PUBLIC_SUBLEDGER_SERVICE_URI: http://72.60.172.224:8081/api/dataloader
+      NEXT_PUBLIC_REPORTING_SERVICE_URI: http://72.60.172.224:8084/api/reporting
+      NEXT_PUBLIC_TENANT: Test
     depends_on:
       reporting:
         condition: service_healthy  # Waits for reporting to be healthy
