@@ -10,6 +10,7 @@ import com.fyntrac.common.enums.ModelStatus;
 import com.fyntrac.common.enums.TestStep;
 import com.fyntrac.common.repository.MemcachedRepository;
 import com.fyntrac.common.service.DataService;
+import com.fyntrac.common.service.GenericJsonImportService;
 import com.fyntrac.data.testdriver.validator.OutputSheetValidator;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -57,6 +58,9 @@ public class ExcelTestDriver {
     Properties properties = new Properties();
     @Autowired
     private DataService dataService;
+
+    @Autowired
+    private GenericJsonImportService genericJsonImportService;
 
     @Autowired
     private MemcachedRepository memcachedRepository;
@@ -152,6 +156,8 @@ public class ExcelTestDriver {
                 loadData(step.input());
             } else if (testStep == TestStep.MODEL_UPLOAD) {
                 model = uploadModel(step.input());
+            } else if(testStep == TestStep.EVENT_CONFIGURATION) {
+                loadEventCofiguration(step.input());
             } else if (testStep == TestStep.MODEL_CONFIGURATION) {
                 model.getModelConfig().setAggregationLevel(AggregationLevel.valueOf(step.input()));
                 model.getModelConfig().setCurrentVersion(Boolean.TRUE);
@@ -177,6 +183,19 @@ public class ExcelTestDriver {
 
     }
 
+    private void loadEventCofiguration(String fileName) throws IOException {
+            InputStream eventConfigurationStream = this.readFile(fileName);
+            this.genericJsonImportService.setDataService(this.dataService);
+        GenericJsonImportService.ImportResult result =
+                this.genericJsonImportService.importJsonToCollection(eventConfigurationStream, "EventConfigurations",
+                        this.tenantId);
+
+        if (result.isSuccess()) {
+            System.out.println("Imported " + result.getImportedCount() + " documents");
+        }else {
+            throw new RuntimeException("Event configuration step fails");
+        }
+    }
     private InputStream readFile(String fileName) throws IOException{
 
         String testResourcePath = String.format("TestDriver/%s", fileName);

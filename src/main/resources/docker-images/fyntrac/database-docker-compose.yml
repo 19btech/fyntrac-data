@@ -2,7 +2,7 @@ version: '3.8'  # Explicit version for compatibility (supports healthchecks, net
 
 services:
   mongodb:
-    image: mongo:6.0.8  # Pinned version instead of latest
+    image: mongo:8.2  # Pinned version instead of latest
     container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
