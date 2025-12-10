@@ -113,7 +113,7 @@
   "eventPriority": 3,
   "description": "Origination Event",
   "triggerSetup": {
-    "triggerType": "ON_ATTRIBUTE_ADD",
+    "triggerType": "ON_INSTRUMENT_ADD",
     "triggerCondition": "",
     "triggerSource": []
   },

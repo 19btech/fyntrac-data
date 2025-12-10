@@ -141,28 +141,60 @@ public class OutputSheetValidator {
         return true;
     }
 
-    private Query buildQuery(String jsonQuery, List<String> includedFields, Map<String, Sort.Direction> sortMap) {
-        jsonQuery = jsonQuery.replace("‘", "\"").replace("’", "\"").replace("“", "\"").replace("”", "\"");
+    private Query buildQuery(String jsonQuery,
+                             List<String> includedFields,
+                             Map<String, Sort.Direction> sortMap) {
+
+        log.warn("⏳ RAW INPUT QUERY: {}", jsonQuery);
+
+        // --- Fix curly quotes if present ---
+        jsonQuery = jsonQuery.replace("‘", "\"")
+                .replace("’", "\"")
+                .replace("“", "\"")
+                .replace("”", "\"");
+
         Document criteriaDoc = Document.parse(jsonQuery);
+
         Query query = new Query();
 
+        log.warn("📌 Parsed Criteria Document: {}", criteriaDoc.toJson());
+
+        // --- Apply Criteria ---
         for (Map.Entry<String, Object> entry : criteriaDoc.entrySet()) {
             if (!entry.getKey().equalsIgnoreCase("collection")) {
                 query.addCriteria(Criteria.where(entry.getKey()).is(entry.getValue()));
             }
         }
 
-        query.fields().include(includedFields.toArray(new String[0]));
+        // ---------------------------------------------------------
+        // FIX: Always include _id to prevent MongoDB from dropping rows
+        // ---------------------------------------------------------
+        query.fields().include("_id");
 
-        if (!sortMap.isEmpty()) {
+        // --- Apply Field Projections Only if Present ---
+        if (includedFields != null && !includedFields.isEmpty()) {
+            includedFields.forEach(f -> {
+                // log.warn("📌 Including field in projection: {}", f);
+                query.fields().include(f);
+            });
+        }
+
+        // --- Sorting ---
+        if (sortMap != null && !sortMap.isEmpty()) {
             Sort sort = Sort.by(sortMap.entrySet().stream()
                     .map(e -> new Sort.Order(e.getValue(), e.getKey()))
                     .toList());
             query.with(sort);
         }
 
+        // --- LOG EVERYTHING ---
+        log.warn("🧾 FINAL QUERY FILTER: {}", query.getQueryObject());
+        log.warn("🧾 FINAL QUERY FIELDS: {}", query.getFieldsObject());
+        log.warn("🧾 FINAL SORT: {}", query.getSortObject());
+
         return query;
     }
+
 
     private String getStringCell(Cell cell) {
         if (cell == null) return null;
