@@ -9,7 +9,6 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MONGO_URI: mongodb://root:R3s3rv%23313@72.60.172.224:27017/TN001/
 
     steps:
       - name: Checkout code
@@ -21,6 +20,11 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Check MongoDB connectivity
+        run: |
+          echo "Checking MongoDB connection to 72.60.172.224:27017"
+          nc -vz 72.60.172.224 27017
+
       # ---------- TEST CASES ----------
       - name: Run TestIFRS9
         continue-on-error: true
@@ -30,7 +34,7 @@ jobs:
             -PtestData=TestIFRS9 \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri=$MONGO_URI
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
 
       - name: Run TestRevenue
         continue-on-error: true
@@ -40,7 +44,7 @@ jobs:
             -PtestData=TestRevenue \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri=$MONGO_URI
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
 
       - name: Run TestSBO
         continue-on-error: true
@@ -50,7 +54,7 @@ jobs:
             -PtestData=TestSBO \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri=$MONGO_URI
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
 
       - name: Run TestGFO
         continue-on-error: true
@@ -60,7 +64,7 @@ jobs:
             -PtestData=TestGFO \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri=$MONGO_URI
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
 
       # ---------- REPORTING ----------
       - name: Publish Test Results
