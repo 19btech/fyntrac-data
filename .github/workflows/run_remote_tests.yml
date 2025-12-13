@@ -19,7 +19,7 @@ jobs:
           host: 72.60.172.224
           username: root
           password: Funrun21@19b
-          timeout: 1800         # Timeout in seconds (30 minutes)
+          timeout: 30m         # Timeout in 30 minutes
           script: |
             cd ~/Workspace/fyntrac-data
             chmod +x run_tests.sh
