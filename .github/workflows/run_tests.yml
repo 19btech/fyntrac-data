@@ -17,12 +17,6 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Install netcat
-        run: sudo apt-get update && sudo apt-get install -y netcat
-
-      - name: Check MongoDB connectivity
-        run: nc -vz 72.60.172.224 27017
-
       - name: Run TestIFRS9
         run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin"
 
