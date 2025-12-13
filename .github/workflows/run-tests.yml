@@ -7,6 +7,10 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
 
+    # Required for GitHub Packages (username = GITHUB_ACTOR, password = GITHUB_TOKEN)
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
