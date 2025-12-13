@@ -9,6 +9,7 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224:27017
 
     steps:
       - name: Checkout code
@@ -25,48 +26,22 @@ jobs:
           echo "Checking MongoDB connection to 72.60.172.224:27017"
           nc -vz 72.60.172.224 27017
 
-      # ---------- TEST CASES ----------
       - name: Run TestIFRS9
         continue-on-error: true
-        run: |
-          ./gradlew clean test \
-            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-            -PtestData=TestIFRS9 \
-            --no-daemon \
-            --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
+        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info
 
       - name: Run TestRevenue
         continue-on-error: true
-        run: |
-          ./gradlew test \
-            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-            -PtestData=TestRevenue \
-            --no-daemon \
-            --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info
 
       - name: Run TestSBO
         continue-on-error: true
-        run: |
-          ./gradlew test \
-            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-            -PtestData=TestSBO \
-            --no-daemon \
-            --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info
 
       - name: Run TestGFO
         continue-on-error: true
-        run: |
-          ./gradlew test \
-            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-            -PtestData=TestGFO \
-            --no-daemon \
-            --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info
 
-      # ---------- REPORTING ----------
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
         if: always()
