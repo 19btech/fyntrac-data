@@ -81,19 +81,13 @@ bootJar {
 
 tasks.named('test') {
 	if (project.hasProperty('test.skip') && project.property('test.skip') == 'true') {
-		// Include only DataApplicationTests and exclude all others
+		// Include only DataloaderApplicationTests and exclude all others
 		include '**/DataApplicationTests.class'
 	}
 	useJUnitPlatform()
 
 	if (project.hasProperty('testData')) {
 		systemProperty 'testData', project.testData
-	}
-
-	// Pass MongoDB URI from environment variable SPRING_DATA_MONGODB_URI as system property
-	def mongoUri = System.getenv('SPRING_DATA_MONGODB_URI')
-	if (mongoUri != null && !mongoUri.isEmpty()) {
-		systemProperty 'spring.data.mongodb.uri', mongoUri
 	}
 
 	// Enable debug when system property is passed
