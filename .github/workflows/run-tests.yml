@@ -9,7 +9,7 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001
+      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin
 
     steps:
       - name: Checkout code
