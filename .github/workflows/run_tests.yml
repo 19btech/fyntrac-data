@@ -31,19 +31,23 @@ jobs:
 
       - name: Run TestIFRS9
         continue-on-error: true
-        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: |
+          ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
 
       - name: Run TestRevenue
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: |
+          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
 
       - name: Run TestSBO
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: |
+          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
 
       - name: Run TestGFO
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: |
+          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
 
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
