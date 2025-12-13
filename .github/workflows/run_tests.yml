@@ -9,42 +9,37 @@ jobs:
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224:27017
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show Mongo URI env var
-        run: echo "Mongo URI: $SPRING_DATA_MONGODB_URI"
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: Check MongoDB connectivity
         run: |
           echo "Checking MongoDB connection to 72.60.172.224:27017"
           nc -vz 72.60.172.224 27017
 
-      - name: Run TestIFRS9 with explicit Mongo URI JVM arg
+      - name: Run TestIFRS9
         continue-on-error: true
-        env:
-          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
         run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info
 
-      - name: Run TestRevenue with explicit Mongo URI JVM arg
+      - name: Run TestRevenue
         continue-on-error: true
-        env:
-          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
         run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info
 
-      - name: Run TestSBO with explicit Mongo URI JVM arg
+      - name: Run TestSBO
         continue-on-error: true
-        env:
-          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
         run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info
 
-      - name: Run TestGFO with explicit Mongo URI JVM arg
+      - name: Run TestGFO
         continue-on-error: true
-        env:
-          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
         run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info
 
       - name: Publish Test Results
