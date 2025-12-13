@@ -21,9 +21,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Show Mongo URI env var
-        run: echo "Mongo URI: $SPRING_DATA_MONGODB_URI"
-
       - name: Check MongoDB connectivity
         run: |
           echo "Checking MongoDB connection to 72.60.172.224:27017"
