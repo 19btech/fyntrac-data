@@ -1,0 +1,91 @@
+[{
+  "_id": {
+    "$oid": "6937b2016a7fbf5c75a640a6"
+  },
+  "eventId": "LD",
+  "eventName": "Loan Details",
+  "eventPriority": 1,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "ATTRIBUTE",
+      "sourceColumns": [
+        {
+          "label": "BORROWER",
+          "value": "BORROWER"
+        },
+        {
+          "label": "COLLATERAL_VALUE",
+          "value": "COLLATERAL_VALUE"
+        },
+        {
+          "label": "CONTRACT_RATE",
+          "value": "CONTRACT_RATE"
+        },
+        {
+          "label": "CURRENT_LOAN_BALANCE",
+          "value": "CURRENT_LOAN_BALANCE"
+        },
+        {
+          "label": "DAYS_PAST_DUE",
+          "value": "DAYS_PAST_DUE"
+        },
+        {
+          "label": "LATEST_RISK_LEVEL",
+          "value": "LATEST_RISK_LEVEL"
+        },
+        {
+          "label": "MATURITY_DATE",
+          "value": "MATURITY_DATE"
+        },
+        {
+          "label": "ORIGINAL_LOAN_AMOUNT",
+          "value": "ORIGINAL_LOAN_AMOUNT"
+        },
+        {
+          "label": "ORIGINATION_DATE",
+          "value": "ORIGINATION_DATE"
+        },
+        {
+          "label": "RISK_LEVEL_AT_ORIGINATION",
+          "value": "RISK_LEVEL_AT_ORIGINATION"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "BALANCES",
+      "sourceColumns": [
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "ECL",
+          "value": "ECL"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+}]
