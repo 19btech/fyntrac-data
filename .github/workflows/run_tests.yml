@@ -25,19 +25,27 @@ jobs:
 
       - name: Run TestIFRS9 with explicit Mongo URI JVM arg
         continue-on-error: true
-        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 -Dspring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI --no-daemon --info
+        env:
+          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
+        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info
 
       - name: Run TestRevenue with explicit Mongo URI JVM arg
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue -Dspring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI --no-daemon --info
+        env:
+          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info
 
       - name: Run TestSBO with explicit Mongo URI JVM arg
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO -Dspring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI --no-daemon --info
+        env:
+          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info
 
       - name: Run TestGFO with explicit Mongo URI JVM arg
         continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO -Dspring.data.mongodb.uri=$SPRING_DATA_MONGODB_URI --no-daemon --info
+        env:
+          JAVA_TOOL_OPTIONS: "-Dspring.data.mongodb.uri=${{ env.SPRING_DATA_MONGODB_URI }}"
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info
 
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
