@@ -7,9 +7,9 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
 
-    # Required for GitHub Packages (username = GITHUB_ACTOR, password = GITHUB_TOKEN)
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MONGO_URI: mongodb://root:R3s3rv%23313@72.60.172.224:27017/TN001/
 
     steps:
       - name: Checkout code
@@ -29,7 +29,8 @@ jobs:
             --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
             -PtestData=TestIFRS9 \
             --no-daemon \
-            --info
+            --info \
+            -Dspring.data.mongodb.uri=$MONGO_URI
 
       - name: Run TestRevenue
         continue-on-error: true
@@ -38,7 +39,8 @@ jobs:
             --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
             -PtestData=TestRevenue \
             --no-daemon \
-            --info
+            --info \
+            -Dspring.data.mongodb.uri=$MONGO_URI
 
       - name: Run TestSBO
         continue-on-error: true
@@ -47,7 +49,8 @@ jobs:
             --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
             -PtestData=TestSBO \
             --no-daemon \
-            --info
+            --info \
+            -Dspring.data.mongodb.uri=$MONGO_URI
 
       - name: Run TestGFO
         continue-on-error: true
@@ -56,7 +59,8 @@ jobs:
             --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
             -PtestData=TestGFO \
             --no-daemon \
-            --info
+            --info \
+            -Dspring.data.mongodb.uri=$MONGO_URI
 
       # ---------- REPORTING ----------
       - name: Publish Test Results
