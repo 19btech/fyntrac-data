@@ -7,10 +7,6 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
 
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      SPRING_DATA_MONGODB_URI: mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,29 +14,26 @@ jobs:
       - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
 
+      - name: Install netcat
+        run: sudo apt-get update && sudo apt-get install -y netcat
+
       - name: Check MongoDB connectivity
-        run: |
-          echo "Checking MongoDB connection to 72.60.172.224:27017"
-          nc -vz 72.60.172.224 27017
+        run: nc -vz 72.60.172.224 27017
 
       - name: Run TestIFRS9
-        continue-on-error: true
-        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info
+        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin"
 
       - name: Run TestRevenue
-        continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin"
 
       - name: Run TestSBO
-        continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin"
 
       - name: Run TestGFO
-        continue-on-error: true
-        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224/TNT001?authSource=admin"
 
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
