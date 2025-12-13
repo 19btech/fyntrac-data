@@ -21,9 +21,6 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Show Mongo URI env var
-        run: echo "Mongo URI: $SPRING_DATA_MONGODB_URI"
-
       - name: Check MongoDB connectivity
         run: |
           echo "Checking MongoDB connection to 72.60.172.224:27017"
@@ -31,23 +28,19 @@ jobs:
 
       - name: Run TestIFRS9
         continue-on-error: true
-        run: |
-          ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: ./gradlew clean test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestIFRS9 --no-daemon --info
 
       - name: Run TestRevenue
         continue-on-error: true
-        run: |
-          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestRevenue --no-daemon --info
 
       - name: Run TestSBO
         continue-on-error: true
-        run: |
-          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestSBO --no-daemon --info
 
       - name: Run TestGFO
         continue-on-error: true
-        run: |
-          ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO -Dspring.data.mongodb.uri="$SPRING_DATA_MONGODB_URI" --no-daemon --info
+        run: ./gradlew test --tests "com.fyntrac.data.testdriver.ExcelTestDriver" -PtestData=TestGFO --no-daemon --info
 
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
