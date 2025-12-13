@@ -11,9 +11,6 @@ jobs:
   run-tests:
     runs-on: ubuntu-latest
 
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,55 +23,59 @@ jobs:
 
       - name: Run TestIFRS9
         continue-on-error: true
-        run: ./gradlew test \
-          --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-          -PtestData=TestIFRS9 \
-          -Dspring.data.mongodb.host=72.60.172.224 \
-          -Dspring.data.mongodb.port=27017 \
-          -Dspring.data.mongodb.database=TNT001 \
-          -Dspring.data.mongodb.username=root \
-          -Dspring.data.mongodb.password=R3s3rv#313 \
-          -Dspring.data.mongodb.authentication-database=admin \
-          --no-daemon --info
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestIFRS9 \
+            -Dspring.data.mongodb.host=72.60.172.224 \
+            -Dspring.data.mongodb.port=27017 \
+            -Dspring.data.mongodb.database=TNT001 \
+            -Dspring.data.mongodb.username=root \
+            -Dspring.data.mongodb.password=R3s3rv#313 \
+            -Dspring.data.mongodb.authentication-database=admin \
+            --no-daemon --info
 
       - name: Run TestRevenue
         continue-on-error: true
-        run: ./gradlew test \
-          --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-          -PtestData=TestRevenue \
-          -Dspring.data.mongodb.host=72.60.172.224 \
-          -Dspring.data.mongodb.port=27017 \
-          -Dspring.data.mongodb.database=TNT001 \
-          -Dspring.data.mongodb.username=root \
-          -Dspring.data.mongodb.password=R3s3rv#313 \
-          -Dspring.data.mongodb.authentication-database=admin \
-          --no-daemon --info
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestRevenue \
+            -Dspring.data.mongodb.host=72.60.172.224 \
+            -Dspring.data.mongodb.port=27017 \
+            -Dspring.data.mongodb.database=TNT001 \
+            -Dspring.data.mongodb.username=root \
+            -Dspring.data.mongodb.password=R3s3rv#313 \
+            -Dspring.data.mongodb.authentication-database=admin \
+            --no-daemon --info
 
       - name: Run TestSBO
         continue-on-error: true
-        run: ./gradlew test \
-          --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-          -PtestData=TestSBO \
-          -Dspring.data.mongodb.host=72.60.172.224 \
-          -Dspring.data.mongodb.port=27017 \
-          -Dspring.data.mongodb.database=TNT001 \
-          -Dspring.data.mongodb.username=root \
-          -Dspring.data.mongodb.password=R3s3rv#313 \
-          -Dspring.data.mongodb.authentication-database=admin \
-          --no-daemon --info
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestSBO \
+            -Dspring.data.mongodb.host=72.60.172.224 \
+            -Dspring.data.mongodb.port=27017 \
+            -Dspring.data.mongodb.database=TNT001 \
+            -Dspring.data.mongodb.username=root \
+            -Dspring.data.mongodb.password=R3s3rv#313 \
+            -Dspring.data.mongodb.authentication-database=admin \
+            --no-daemon --info
 
       - name: Run TestGFO
         continue-on-error: true
-        run: ./gradlew test \
-          --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
-          -PtestData=TestGFO \
-          -Dspring.data.mongodb.host=72.60.172.224 \
-          -Dspring.data.mongodb.port=27017 \
-          -Dspring.data.mongodb.database=TNT001 \
-          -Dspring.data.mongodb.username=root \
-          -Dspring.data.mongodb.password=R3s3rv#313 \
-          -Dspring.data.mongodb.authentication-database=admin \
-          --no-daemon --info
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestGFO \
+            -Dspring.data.mongodb.host=72.60.172.224 \
+            -Dspring.data.mongodb.port=27017 \
+            -Dspring.data.mongodb.database=TNT001 \
+            -Dspring.data.mongodb.username=root \
+            -Dspring.data.mongodb.password=R3s3rv#313 \
+            -Dspring.data.mongodb.authentication-database=admin \
+            --no-daemon --info
 
       - name: Publish Test Results
         uses: actions/upload-artifact@v4
