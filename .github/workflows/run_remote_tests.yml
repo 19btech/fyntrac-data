@@ -1,0 +1,35 @@
+name: Run Remote Tests on VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-remote-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run tests via SSH 
+        uses: appleboy/ssh-action@v0.1.7
+        id: ssh_test
+        with:
+          host: 72.60.172.224
+          username: root
+          password: "Funrun21@19b"
+          port: 22
+          script: |
+            cd ~/Workspace/fyntrac-data
+            ./run_tests.sh
+        continue-on-error: false
+
+      - name: Check test results for failures
+        if: steps.ssh_test.outcome == 'success'
+        run: |
+          echo "${{ steps.ssh_test.outputs.stdout }}" | tee output.log
+
+          # Look for any FAILED in output and fail if found
+          if grep -q "FAILED" output.log; then
+            echo "One or more test cases failed."
+            exit 1
+          else
+            echo "All test cases passed."
+          fi
