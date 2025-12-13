@@ -34,7 +34,7 @@ jobs:
             -PtestData=TestIFRS9 \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
 
       - name: Run TestRevenue
         continue-on-error: true
@@ -44,7 +44,7 @@ jobs:
             -PtestData=TestRevenue \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
 
       - name: Run TestSBO
         continue-on-error: true
@@ -54,7 +54,7 @@ jobs:
             -PtestData=TestSBO \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
 
       - name: Run TestGFO
         continue-on-error: true
@@ -64,7 +64,7 @@ jobs:
             -PtestData=TestGFO \
             --no-daemon \
             --info \
-            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/TNT001/"
+            -Dspring.data.mongodb.uri="mongodb://root:R3s3rv%23313@72.60.172.224:27017/"
 
       # ---------- REPORTING ----------
       - name: Publish Test Results
