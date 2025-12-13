@@ -9,9 +9,8 @@ group = 'com.fyntrac'
 version = '0.0.2-SNAPSHOT'
 def projectname = 'data'
 
-def gituser = System.getenv('GIT_USER')  // Your GitHub username
-def gittoken = System.getenv('GIT_KEY') // Ensure you set this in your environment variables for security
-
+def gituser = System.getenv('GITHUB_ACTOR')   // GitHub Actions username
+def gittoken = System.getenv('GITHUB_TOKEN') // GitHub Actions token
 
 java {
 	toolchain {
@@ -28,30 +27,30 @@ configurations {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			from components.java  // Publish the Java component
-			groupId = 'com.fyntrac'  // Set your group ID
-			artifactId = '${projectname}'  // Set your artifact ID
-			version = project.version  // Set your version
+			from components.java
+			groupId = 'com.fyntrac'
+			artifactId = projectname      // Use variable, not string literal
+			version = project.version
 		}
 	}
 	repositories {
 		maven {
-			url = uri("https://maven.pkg.github.com/${gituser}/subledger")  // Use the variable for username
+			url = uri("https://maven.pkg.github.com/19btech/subledger")  // Correct org here
 			credentials {
-				username = gituser  // Use the variable for username
-				password = gittoken  // Use the variable for token
+				username = gituser
+				password = gittoken
 			}
 		}
 	}
 }
 
 repositories {
-	mavenCentral()  // Central Maven repository
+	mavenCentral()
 	maven {
-		url = uri("https://maven.pkg.github.com/${gituser}/subledger")  // Use an environment variable for username
+		url = uri("https://maven.pkg.github.com/19btech/subledger")  // Correct org here
 		credentials {
-			username = gituser  // Use the variable for username
-			password = gittoken  // Use the variable for token
+			username = gituser
+			password = gittoken
 		}
 	}
 }
@@ -74,7 +73,6 @@ dependencies {
 	runtimeOnly 'com.h2database:h2'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-
 }
 
 bootJar {
@@ -96,7 +94,4 @@ tasks.named('test') {
 	if (project.hasProperty('debugTest')) {
 		jvmArgs "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
 	}
-
-
 }
-
