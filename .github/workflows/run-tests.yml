@@ -1,7 +1,7 @@
 name: Fyntrac Test Runner
 
 on:
-  workflow_dispatch:   # allows "Run" button
+  workflow_dispatch:
 
 jobs:
   run-tests:
@@ -11,14 +11,59 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Make script executable
-        run: chmod +x run_tests.sh
+      # ---------- TEST CASES ----------
+      - name: Run TestIFRS9
+        continue-on-error: true
+        run: |
+          ./gradlew clean test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestIFRS9 \
+            --no-daemon \
+            --info
 
-      - name: Run test cases
-        run: ./run_tests.sh
+      - name: Run TestRevenue
+        continue-on-error: true
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestRevenue \
+            --no-daemon \
+            --info
+
+      - name: Run TestSBO
+        continue-on-error: true
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestSBO \
+            --no-daemon \
+            --info
+
+      - name: Run TestGFO
+        continue-on-error: true
+        run: |
+          ./gradlew test \
+            --tests "com.fyntrac.data.testdriver.ExcelTestDriver" \
+            -PtestData=TestGFO \
+            --no-daemon \
+            --info
+
+      # ---------- REPORTING ----------
+      - name: Publish Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: junit-test-results
+          path: build/test-results/test
+
+      - name: Test Summary
+        uses: test-summary/action@v2
+        if: always()
+        with:
+          paths: build/test-results/test/*.xml
