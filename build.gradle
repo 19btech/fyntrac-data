@@ -10,7 +10,7 @@ version = '0.0.2-SNAPSHOT'
 def projectname = 'data'
 
 def gituser = System.getenv('GIT_USER')   // GitHub Actions username
-def gittoken = System.getenv('GIT_TOKEN') // GitHub Actions token
+def gittoken = System.getenv('GIT_KEY') // GitHub Actions token
 
 java {
 	toolchain {
