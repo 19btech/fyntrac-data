@@ -1,6 +1,6 @@
 [{
   "_id": {
-    "$oid": "69391ef46a7fbf5c75a64a37"
+    "$oid": "693e4f2cb31b88224aad49cc"
   },
   "eventId": "EOD",
   "eventName": "End of Day Event",
@@ -13,7 +13,7 @@
   },
   "sourceMappings": [
     {
-      "sourceTable": "ATTRIBUTE",
+      "sourceTable": "Attribute",
       "sourceColumns": [
         {
           "label": "ORIGINATIONDATE",
@@ -42,7 +42,7 @@
       "fieldType": "NONE"
     },
     {
-      "sourceTable": "BALANCES",
+      "sourceTable": "Balances",
       "sourceColumns": [
         {
           "label": "EndingBalance",
@@ -63,8 +63,54 @@
       "fieldType": "NONE"
     }
   ],
-  "createdBy": "67171f54dcbd9e7e9a527801",
-  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "694085f1954e0410ddc3c163"
+  },
+  "eventId": "ECF",
+  "eventName": "Expected CashFlow",
+  "eventPriority": 2,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_CUSTOM_DATA_TRIGGER",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "Operational Table",
+        "value": "operational_table"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "ExpectedCashFlow",
+      "sourceColumns": [
+        {
+          "label": "MeasurementType",
+          "value": "MeasurementType"
+        },
+        {
+          "label": "StartDate",
+          "value": "StartDate"
+        },
+        {
+          "label": "ExpectedCF",
+          "value": "ExpectedCF"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
   "isActive": true,
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"

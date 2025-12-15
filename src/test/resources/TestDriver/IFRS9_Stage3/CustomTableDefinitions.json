@@ -1,0 +1,100 @@
+[{
+  "_id": {
+    "$oid": "693e4f9cb31b88224aad49cd"
+  },
+  "tableName": "MeasurementType",
+  "description": "credit risk assessment measurement approaches",
+  "tableType": "REFERENCE",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "MeasurementType",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 0
+    }
+  ],
+  "primaryKeys": [
+    "MeasurementType"
+  ],
+  "referenceColumn": "MeasurementType",
+  "referenceTable": "",
+  "createdAt": {
+    "$date": "2025-12-14T05:48:12.032Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-14T05:48:12.032Z"
+  },
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+},
+{
+  "_id": {
+    "$oid": "693e509bb31b88224aad49cf"
+  },
+  "tableName": "ExpectedCashFlow",
+  "description": "ExpectedCashFlow",
+  "tableType": "OPERATIONAL",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "MeasurementType",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 0
+    },
+    {
+      "userField": "USERFIELD2",
+      "columnName": "instrumentId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 1
+    },
+    {
+      "userField": "USERFIELD3",
+      "columnName": "attributeId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 2
+    },
+    {
+      "userField": "USERFIELD4",
+      "columnName": "postingDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 3
+    },
+    {
+      "userField": "USERFIELD5",
+      "columnName": "effectiveDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 4
+    },
+    {
+      "userField": "USERFIELD6",
+      "columnName": "StartDate",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 5
+    },
+    {
+      "userField": "USERFIELD7",
+      "columnName": "ExpectedCF",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 6
+    }
+  ],
+  "primaryKeys": [
+    "MeasurementType"
+  ],
+  "referenceColumn": "MeasurementType",
+  "referenceTable": "MeasurementType",
+  "createdAt": {
+    "$date": "2025-12-14T05:52:27.479Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-14T05:52:27.479Z"
+  },
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+}]
