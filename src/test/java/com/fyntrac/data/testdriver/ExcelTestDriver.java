@@ -158,7 +158,11 @@ public class ExcelTestDriver {
                 model = uploadModel(step.input());
             } else if(testStep == TestStep.EVENT_CONFIGURATION) {
                 loadEventCofiguration(step.input());
-            } else if (testStep == TestStep.MODEL_CONFIGURATION) {
+            } else if(testStep == TestStep.CUSTOM_TABLE_DEFINITION) {
+                loadCustomTableDefinition(step.input());
+            }else if(testStep == TestStep.UPLOAD_CUSTOM_DATA) {
+                loadCustomData(step.input());
+            }else if (testStep == TestStep.MODEL_CONFIGURATION) {
                 model.getModelConfig().setAggregationLevel(AggregationLevel.valueOf(step.input()));
                 model.getModelConfig().setCurrentVersion(Boolean.TRUE);
                 model.setModelStatus(ModelStatus.ACTIVE);
@@ -196,6 +200,21 @@ public class ExcelTestDriver {
             throw new RuntimeException("Event configuration step fails");
         }
     }
+
+    private void loadCustomTableDefinition(String fileName) throws IOException {
+        InputStream eventConfigurationStream = this.readFile(fileName);
+        this.genericJsonImportService.setDataService(this.dataService);
+        GenericJsonImportService.ImportResult result =
+                this.genericJsonImportService.importJsonToCollection(eventConfigurationStream, "CustomTableDefinitions",
+                        this.tenantId);
+
+        if (result.isSuccess()) {
+            System.out.println("Imported " + result.getImportedCount() + " documents");
+        }else {
+            throw new RuntimeException("Event configuration step fails");
+        }
+    }
+
     private InputStream readFile(String fileName) throws IOException{
 
         String testResourcePath = String.format("TestDriver/%s", fileName);
@@ -215,6 +234,15 @@ public class ExcelTestDriver {
         streams[0] = fileStream;
         fileNames[0] = "dataFile.xlsx";
         uploadFiles(streams, fileNames);
+    }
+
+    private void loadCustomData(String dataFile) throws IOException {
+        InputStream fileStream = this.readFile(dataFile);
+        InputStream[] streams = new InputStream[1];
+        String[] fileNames = new String[1];
+        streams[0] = fileStream;
+        fileNames[0] = "customDataFile.xlsx";
+        uploadCustomDateFiles(streams, fileNames);
     }
 
     private void generateAccountingPeriod(Date fiscalPeriodStartDate) {
@@ -258,6 +286,25 @@ public class ExcelTestDriver {
         Assertions.assertEquals(200, response.getStatusCodeValue(), "File upload failed");
     }
 
+    private void uploadCustomDateFiles(InputStream[] streams, String[] filenames) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("X-Tenant", tenantId); // optional if you need tenant info
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+
+        for (int i = 0; i < streams.length; i++) {
+            NamedInputStreamResource resource = new NamedInputStreamResource(streams[i], filenames[i]);
+            body.add("files", resource); // "files" must match your @RequestParam name
+        }
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+        String uri = String.format("%s/%s", dataLoaderURI, "fyntrac/custom-table/data-upload" );
+        ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
+
+        Assertions.assertEquals(200, response.getStatusCodeValue(), "File upload failed");
+    }
+
     Model uploadModel(String modelFile) throws Exception {
         String uri = String.format("%s/%s", dataLoaderURI, "model/upload" );
 
@@ -287,6 +334,7 @@ public class ExcelTestDriver {
         return response.getBody();
         // Optionally assert response body
     }
+
 
     Model configureModel(Model model) throws Exception {
         String uri = String.format("%s/%s", dataLoaderURI, "model/configure" );
