@@ -109,8 +109,11 @@
       "fieldType": "NONE"
     }
   ],
+  "updatedAt": {
+    "$date": "2025-12-16T03:50:11.879Z"
+  },
   "createdBy": "67171f54dcbd9e7e9a527803",
-  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
   "isActive": true,
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"
