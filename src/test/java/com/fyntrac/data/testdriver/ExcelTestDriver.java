@@ -1,5 +1,9 @@
 package com.fyntrac.data.testdriver;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fyntrac.common.component.TenantDataSourceProvider;
 import com.fyntrac.common.dto.record.RecordFactory;
 import com.fyntrac.common.dto.record.Records;
@@ -306,9 +310,9 @@ public class ExcelTestDriver {
     }
 
     Model uploadModel(String modelFile) throws Exception {
-        String uri = String.format("%s/%s", dataLoaderURI, "model/upload" );
+        String uri = String.format("%s/%s", dataLoaderURI, "model/upload");
 
-         InputStream fileStream = this.readFile(modelFile);
+        InputStream fileStream = this.readFile(modelFile);
 
         // Prepare file content
         byte[] content = ExcelTestDriver.toByteArray(fileStream);
@@ -317,6 +321,7 @@ public class ExcelTestDriver {
         headers.set("X-Tenant", tenantId);
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        // Anonymous class to ensure filename is passed, otherwise Spring uploads as 'unknown'
         body.add("files", new ByteArrayResource(content) {
             @Override
             public String getFilename() {
@@ -328,13 +333,33 @@ public class ExcelTestDriver {
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-        ResponseEntity<Model> response = restTemplate.postForEntity(uri, requestEntity, Model.class);
+        // 1. Request as String.class to safely capture both JSON (Success) and Plain Text (Error)
+        ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
 
+        // 2. Handle Failure
+        if (response.getStatusCode() != HttpStatus.OK) {
+            // Fail the test with the clear error message from the server
+            Assertions.fail("Fail to load Model. Status: " + response.getStatusCode() + ", Body: " + response.getBody());
+            // This throw is technically unreachable due to Assertions.fail, but good for compiler logic
+            throw new RuntimeException("Upload failed: " + response.getBody());
+        }
+
+        // 3. Handle Success: Manually deserialize the JSON string to Model
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-        return response.getBody();
-        // Optionally assert response body
-    }
 
+        ObjectMapper mapper = new ObjectMapper();
+        // Good practice for tests: don't fail if the API adds new fields later
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Register time module if your Model uses Java 8 dates (LocalDate, etc.)
+        mapper.registerModule(new JavaTimeModule());
+
+        try {
+            return mapper.readValue(response.getBody(), Model.class);
+        } catch (Exception e) {
+            Assertions.fail("Response was 200 OK, but failed to parse JSON into Model: " + e.getMessage());
+            return null;
+        }
+    }
 
     Model configureModel(Model model) throws Exception {
         String uri = String.format("%s/%s", dataLoaderURI, "model/configure" );
