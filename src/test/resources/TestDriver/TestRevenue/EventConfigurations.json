@@ -155,4 +155,58 @@
   "isActive": true,
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6940ee6c02e0500bad25b08f"
+  },
+  "eventId": "CATALOG",
+  "eventName": "Product Catalog",
+  "eventPriority": 5,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_CUSTOM_DATA_TRIGGER",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "Reference Table",
+        "value": "reference_table"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "CATALOG",
+      "sourceColumns": [
+        {
+          "label": "ProductId",
+          "value": "ProductId"
+        },
+        {
+          "label": "ProductName",
+          "value": "ProductName"
+        },
+        {
+          "label": "SSP",
+          "value": "SSP"
+        },
+        {
+          "label": "RevRec_Method",
+          "value": "RevRec_Method"
+        },
+        {
+          "label": "Amount",
+          "value": "Amount"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
 }]
