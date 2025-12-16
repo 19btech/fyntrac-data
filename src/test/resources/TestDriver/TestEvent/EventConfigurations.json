@@ -1,0 +1,231 @@
+[{
+  "_id": {
+    "$oid": "694150e002e0500bad25bd9a"
+  },
+  "eventId": "ORIG",
+  "eventName": "Origination Event",
+  "eventPriority": 1,
+  "description": "Origination Event",
+  "triggerSetup": {
+    "triggerType": "ON_INSTRUMENT_ADD",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "LOAN_AMOUNT",
+          "value": "LOAN_AMOUNT"
+        },
+        {
+          "label": "INTEREST_RECEIVABLE_CONSUMER",
+          "value": "INTEREST_RECEIVABLE_CONSUMER"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "ACCRUED_INTEREST_RECEIVABLE",
+          "value": "ACCRUED_INTEREST_RECEIVABLE"
+        },
+        {
+          "label": "UNPAID_PRINCIPAL_BALANCE",
+          "value": "UNPAID_PRINCIPAL_BALANCE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "694153f202e0500bad25bd9b"
+  },
+  "eventId": "INT_ACC",
+  "eventName": "Interest Accrual",
+  "eventPriority": 4,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "INTEREST_RATE",
+          "value": "INTEREST_RATE"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "BeginningBalance",
+          "value": "BeginningBalance"
+        },
+        {
+          "label": "Activity",
+          "value": "Activity"
+        },
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "SERVICING_INTEREST_ACCRUAL",
+          "value": "SERVICING_INTEREST_ACCRUAL"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-12-16T12:43:32.351Z"
+  },
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6941543b02e0500bad25bd9c"
+  },
+  "eventId": "PMT",
+  "eventName": "Payment Event",
+  "eventPriority": 2,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_TRANSACTION_POST",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "PAYMENT_UPB",
+        "value": "PAYMENT_UPB"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Transactions",
+      "sourceColumns": [
+        {
+          "label": "Amount",
+          "value": "Amount"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "INTEREST_ADJUSTMENT",
+          "value": "INTEREST_ADJUSTMENT"
+        },
+        {
+          "label": "PAYMENT_INTEREST",
+          "value": "PAYMENT_INTEREST"
+        },
+        {
+          "label": "PAYMENT_UPB",
+          "value": "PAYMENT_UPB"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6941559002e0500bad25bd9d"
+  },
+  "eventId": "RC",
+  "eventName": "Rate Change ",
+  "eventPriority": 3,
+  "description": "Rate Change",
+  "triggerSetup": {
+    "triggerType": "ON_ATTRIBUTE_CHANGE",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "INTEREST_RATE",
+        "value": "INTEREST_RATE"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "INTEREST_RATE",
+          "value": "INTEREST_RATE"
+        },
+        {
+          "label": "LOAN_TERM",
+          "value": "LOAN_TERM"
+        },
+        {
+          "label": "LOAN_STATUS",
+          "value": "LOAN_STATUS"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+}]
