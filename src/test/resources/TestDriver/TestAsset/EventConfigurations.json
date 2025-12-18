@@ -1,0 +1,67 @@
+[{
+  "_id": {
+    "$oid": "6944360cf166122a48983947"
+  },
+  "eventId": "EOD",
+  "eventName": "End Of Day event",
+  "eventPriority": 1,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "ASSETCOST",
+          "value": "ASSETCOST"
+        }
+      ],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "ASSET_NAME",
+          "value": "ASSET_NAME"
+        },
+        {
+          "label": "ACQUISITION_YEAR",
+          "value": "ACQUISITION_YEAR"
+        },
+        {
+          "label": "USEFUL_LIFE",
+          "value": "USEFUL_LIFE"
+        },
+        {
+          "label": "SALVAGE_VALUE",
+          "value": "SALVAGE_VALUE"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+}]
