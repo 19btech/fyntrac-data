@@ -75,7 +75,7 @@
   },
   "eventId": "ECF",
   "eventName": "Expected CashFlow",
-  "eventPriority": 1,
+  "eventPriority": 2,
   "description": "",
   "triggerSetup": {
     "triggerType": "ON_CUSTOM_DATA_TRIGGER",
@@ -109,17 +109,13 @@
         {
           "label": "CF",
           "value": "CF"
-        },
-        {
-          "label": "COLLATERAL",
-          "value": "COLLATERAL"
         }
       ],
       "fieldType": "NONE"
     }
   ],
   "updatedAt": {
-    "$date": "2025-12-21T07:57:58.021Z"
+    "$date": "2025-12-21T08:04:44.341Z"
   },
   "createdBy": "67171f54dcbd9e7e9a527803",
   "updatedBy": "67171f54dcbd9e7e9a527801",
