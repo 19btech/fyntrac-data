@@ -145,7 +145,7 @@ public class ExcelTestDriver {
         OutputSheetValidator outputSheetValidator = new OutputSheetValidator(mongoTemplate);
         try {
             outputSheetValidator.validate(this.readFile(testFile));
-        }catch (RuntimeException e){
+        }catch (Exception e){ // Catch Exception instead of RuntimeException to catch checked exceptions from validate()
             Assertions.fail("Data comparision failed: " + e.getMessage(), e);
         }
     }
@@ -192,8 +192,8 @@ public class ExcelTestDriver {
     }
 
     private void loadEventCofiguration(String fileName) throws IOException {
-            InputStream eventConfigurationStream = this.readFile(fileName);
-            this.genericJsonImportService.setDataService(this.dataService);
+        InputStream eventConfigurationStream = this.readFile(fileName);
+        this.genericJsonImportService.setDataService(this.dataService);
         GenericJsonImportService.ImportResult result =
                 this.genericJsonImportService.importJsonToCollection(eventConfigurationStream, "EventConfigurations",
                         this.tenantId);
@@ -228,7 +228,7 @@ public class ExcelTestDriver {
             throw new FileNotFoundException("Test properties not found at: " + testResourcePath);
         }
 
-       return resource.getInputStream();
+        return resource.getInputStream();
     }
 
     private void loadData(String dataFile) throws IOException {
@@ -436,7 +436,7 @@ public class ExcelTestDriver {
         if (cell == null) return "";
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
-            case NUMERIC -> DateUtil.isCellDateFormatted(cell) ?
+            case NUMERIC -> org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell) ?
                     cell.getLocalDateTimeCellValue().toLocalDate().toString() :
                     String.valueOf(cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
