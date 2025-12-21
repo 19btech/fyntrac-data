@@ -1,9 +1,9 @@
 [{
   "_id": {
-    "$oid": "693e4f2cb31b88224aad49cc"
+    "$oid": "6947b464dfafe52b6b20b8ac"
   },
   "eventId": "EOD",
-  "eventName": "End of Day Event",
+  "eventName": "End Of Day",
   "eventPriority": 1,
   "description": "",
   "triggerSetup": {
@@ -63,19 +63,19 @@
       "fieldType": "NONE"
     }
   ],
-  "createdBy": "67171f54dcbd9e7e9a527803",
-  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
   "isActive": true,
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"
 },
 {
   "_id": {
-    "$oid": "694085f1954e0410ddc3c163"
+    "$oid": "6947b4aadfafe52b6b20b8ad"
   },
   "eventId": "ECF",
-  "eventName": "Expected CashFlow",
-  "eventPriority": 2,
+  "eventName": "ExpectedCashFlows",
+  "eventPriority": 3,
   "description": "",
   "triggerSetup": {
     "triggerType": "ON_CUSTOM_DATA_TRIGGER",
@@ -114,12 +114,9 @@
       "fieldType": "NONE"
     }
   ],
-  "updatedAt": {
-    "$date": "2025-12-21T08:04:44.341Z"
-  },
-  "createdBy": "67171f54dcbd9e7e9a527803",
+  "createdBy": "67171f54dcbd9e7e9a527801",
   "updatedBy": "67171f54dcbd9e7e9a527801",
   "isActive": true,
-  "isDeleted": true,
+  "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"
 }]
