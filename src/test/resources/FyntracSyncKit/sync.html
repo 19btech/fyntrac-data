@@ -1,0 +1,3199 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fyntrac - Data Integration Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f7f9fc;
+      color: #1a202c;
+      min-height: 100vh;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+
+    /* Sidebar Navigation */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: white;
+      color: #1a202c;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      left: 0;
+      top: 0;
+      transition: all 0.3s ease;
+      z-index: 50;
+      border-right: 1px solid #e2e8f0;
+    }
+
+    .sidebar.collapsed {
+      width: 60px;
+    }
+
+    .sidebar-logo {
+      padding: 1.5rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 82px;
+    }
+
+    .sidebar.collapsed .sidebar-logo {
+      padding: 1.5rem 0.5rem;
+    }
+
+    .sidebar-logo img {
+      width: 220px;
+      height: 60px;
+      object-fit: contain;
+      max-width: 100%;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed .sidebar-logo img {
+      display: none;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 1.5rem 0;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .sidebar.collapsed .nav-item {
+      padding: 0.75rem;
+      justify-content: center;
+    }
+
+    .nav-item:hover {
+      background-color: #f8fafc;
+      color: #5850ec;
+    }
+
+    .nav-item.active {
+      background-color: #eef6ff;
+      color: #5850ec;
+      border-left-color: #5850ec;
+    }
+
+    .nav-icon {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .nav-item span:not(.nav-icon) {
+      transition: all 0.3s ease;
+    }
+
+    .sidebar.collapsed .nav-item span:not(.nav-icon) {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-toggle {
+      padding: 1rem;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #64748b;
+    }
+
+    .sidebar-toggle:hover {
+      background-color: #f8fafc;
+      color: #5850ec;
+    }
+
+    .sidebar-toggle-icon {
+      font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.collapsed .sidebar-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Main Content */
+    .main-content {
+      margin-left: 240px;
+      flex: 1;
+      min-height: 100vh;
+      background-color: #eef6ff;
+      transition: margin-left 0.3s ease;
+    }
+
+    .sidebar.collapsed ~ .main-content {
+      margin-left: 60px;
+    }
+
+    .top-bar {
+      background-color: white;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 1.5rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .top-bar-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 0;
+    }
+
+    .top-bar-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .content-wrapper {
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn-primary {
+      background-color: #14213d;
+      color: white;
+      box-shadow: 0 2px 4px rgba(20, 33, 61, 0.2);
+    }
+
+    .btn-primary:hover {
+      background-color: #0d1624;
+      box-shadow: 0 4px 8px rgba(20, 33, 61, 0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      background-color: #94a3b8;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background-color: white;
+      color: #14213d;
+      border: 2px solid #14213d;
+    }
+
+    .btn-secondary:hover {
+      background-color: #f0f2f5;
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    .btn-ghost:hover {
+      background-color: #f8fafc;
+      color: #1a202c;
+    }
+
+    .btn-danger {
+      background-color: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+
+    .btn-sm {
+      padding: 0.5rem 1rem;
+      font-size: 0.8125rem;
+    }
+
+    /* Cards */
+    .card {
+      background-color: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #e2e8f0;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 0;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state h2 {
+      font-size: 1.5rem;
+      margin: 0 0 0.5rem 0;
+      color: #1a202c;
+    }
+
+    .empty-state p {
+      color: #64748b;
+      margin-bottom: 2rem;
+    }
+
+    /* Template Grid */
+    .template-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .template-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 2px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .template-card:hover {
+      border-color: #5850ec;
+      box-shadow: 0 8px 16px rgba(88, 80, 236, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .template-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .template-name {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .template-target {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin: 0 0 1rem 0;
+    }
+
+    .template-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 1rem;
+    }
+
+    .template-actions {
+      display: flex;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-active {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-draft {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    /* Wizard Steps */
+    .wizard-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .wizard-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding: 0 2rem;
+      position: relative;
+    }
+
+    .wizard-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .wizard-step::after {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background-color: #e2e8f0;
+      z-index: -1;
+    }
+
+    .wizard-step:last-child::after {
+      display: none;
+    }
+
+    .wizard-step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: #e2e8f0;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      transition: all 0.3s;
+      position: relative;
+      z-index: 2;
+    }
+
+    .wizard-step.active .wizard-step-number {
+      background-color: #5850ec;
+      color: white;
+      box-shadow: 0 0 0 4px rgba(88, 80, 236, 0.1);
+    }
+
+    .wizard-step.completed .wizard-step-number {
+      background-color: #10b981;
+      color: white;
+    }
+
+    .wizard-step-label {
+      font-size: 0.8125rem;
+      color: #64748b;
+      font-weight: 500;
+      text-align: center;
+    }
+
+    .wizard-step.active .wizard-step-label {
+      color: #5850ec;
+      font-weight: 600;
+    }
+
+    .wizard-content {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+      min-height: 400px;
+    }
+
+    .wizard-content-header {
+      margin-bottom: 2rem;
+    }
+
+    .wizard-content-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1a202c;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .wizard-content-description {
+      color: #64748b;
+      margin: 0;
+    }
+
+    .wizard-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid #f1f5f9;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #374151;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.9375rem;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #5850ec;
+      box-shadow: 0 0 0 3px rgba(88, 80, 236, 0.1);
+    }
+
+    .form-hint {
+      font-size: 0.8125rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background-color: #f8fafc;
+    }
+
+    .upload-zone:hover {
+      border-color: #5850ec;
+      background-color: #f7f7ff;
+    }
+
+    .upload-zone-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .upload-zone-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a202c;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .upload-zone-hint {
+      font-size: 0.875rem;
+      color: #64748b;
+      margin: 0;
+    }
+
+    .file-uploaded {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      background-color: #f0fdf4;
+      border: 2px solid #86efac;
+      border-radius: 8px;
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: #166534;
+    }
+
+    /* Mapping Table */
+    .mapping-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .mapping-row {
+      display: grid;
+      grid-template-columns: 200px 150px 1fr;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem;
+      background-color: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .mapping-label {
+      font-weight: 600;
+      color: #1a202c;
+      font-size: 0.875rem;
+    }
+
+    /* Info Box */
+    .info-box {
+      padding: 1rem;
+      background-color: #eff6ff;
+      border-left: 4px solid #5850ec;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-box-title {
+      font-weight: 600;
+      color: #1e40af;
+      margin: 0 0 0.5rem 0;
+      font-size: 0.875rem;
+    }
+
+    .info-box-content {
+      font-size: 0.8125rem;
+      color: #475569;
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(88, 80, 236, 0.2);
+    }
+
+    .stat-label {
+      font-size: 0.8125rem;
+      opacity: 0.9;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background-color: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-header {
+      padding: 2rem 2rem 1rem 2rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+      color: #1a202c;
+    }
+
+    .modal-body {
+      padding: 2rem;
+    }
+
+    .modal-footer {
+      padding: 1rem 2rem 2rem 2rem;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 1rem;
+      font-weight: 600;
+      color: #64748b;
+      background-color: #f8fafc;
+      border-bottom: 2px solid #e2e8f0;
+      font-size: 0.8125rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .data-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .data-table tr:hover {
+      background-color: #f8fafc;
+    }
+
+    /* Rule Card */
+    .rule-card {
+      padding: 1.5rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      background-color: #fafafa;
+    }
+
+    .rule-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .rule-card-title {
+      font-weight: 600;
+      color: #1a202c;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 60px;
+      }
+
+      .sidebar-logo h1 {
+        font-size: 1rem;
+      }
+
+      .sidebar-logo p,
+      .nav-item span:not(.nav-icon) {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 60px;
+      }
+
+      .mapping-row {
+        grid-template-columns: 1fr;
+      }
+
+      .top-bar {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body><!-- App Container -->
+  <div class="app-container"><!-- Sidebar -->
+   <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="https://i.postimg.cc/d78Gz6zp/fyntrac-logo.png" alt="Fyntrac Logo" onerror="this.style.display='none'; this.parentElement.innerHTML='<h1 style=\'margin:0;font-size:1.5rem;font-weight:700;color:#1a202c;\'>Fyntrac</h1>';">
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"><!-- Navigation items will be inserted here -->
+    </nav>
+    <div class="sidebar-toggle" onclick="toggleSidebar()"><span class="sidebar-toggle-icon">◀</span>
+    </div>
+   </aside><!-- Main Content -->
+   <div class="main-content">
+    <div class="top-bar" id="topBar"><!-- Top bar content will be inserted here -->
+    </div>
+    <div class="content-wrapper" id="contentWrapper"><!-- Page content will be inserted here -->
+    </div>
+   </div>
+  </div><!-- Process File Modal -->
+  <div id="processFileModal" class="modal">
+   <div class="modal-content">
+    <div class="modal-header">
+     <h2 class="modal-title">Process File</h2>
+    </div>
+    <div class="modal-body">
+     <form id="processFileForm">
+      <div class="form-group"><label class="form-label" for="templateSelect">Select Template</label> <select id="templateSelect" class="form-control" required> <option value="">Choose a template...</option> </select>
+      </div>
+      <div class="form-group"><label class="form-label" for="fileInput">Upload Source File</label>
+       <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-zone-icon">
+         <svg width="48" height="48" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path> <polyline points="17 8 12 3 7 8"></polyline> <line x1="12" y1="3" x2="12" y2="15"></line>
+         </svg>
+        </div>
+        <p class="upload-zone-title">Click to upload or drag and drop</p>
+        <p class="upload-zone-hint">CSV or Excel file (.csv, .xlsx)</p><input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;" required>
+       </div>
+       <div id="fileNameDisplay"></div>
+      </div>
+     </form>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-ghost" onclick="closeProcessFileDialog()">Cancel</button> <button type="button" class="btn btn-primary" onclick="submitProcessFile()"> ⬆ Start Processing </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // Application State
+    let currentView = 'templates';
+    let templates = [];
+    let fileRuns = [];
+    let selectedFile = null;
+    let currentReviewRun = null;
+    let sidebarCollapsed = false;
+
+    // Template Builder State
+    let currentTemplate = null;
+    let wizardStep = 1;
+    let sourceColumns = [];
+    let columnMappings = [];
+    let transformationRules = [];
+    let customColumns = [];
+    let sampleSourceData = [];
+    let duplicationRules = [];
+
+    // Sidebar Toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebarCollapsed = !sidebarCollapsed;
+      
+      if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+      } else {
+        sidebar.classList.remove('collapsed');
+      }
+      
+      localStorage.setItem('fyntrac_sidebar_collapsed', sidebarCollapsed);
+    }
+
+    // Helper Functions
+    function generateId() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    function saveToStorage() {
+      localStorage.setItem('fyntrac_templates', JSON.stringify(templates));
+      localStorage.setItem('fyntrac_runs', JSON.stringify(fileRuns));
+    }
+
+    function loadFromStorage() {
+      const savedTemplates = localStorage.getItem('fyntrac_templates');
+      const savedRuns = localStorage.getItem('fyntrac_runs');
+      const savedSidebarState = localStorage.getItem('fyntrac_sidebar_collapsed');
+      
+      if (savedTemplates) {
+        templates = JSON.parse(savedTemplates);
+      }
+      if (savedRuns) {
+        fileRuns = JSON.parse(savedRuns);
+      }
+      if (savedSidebarState === 'true') {
+        sidebarCollapsed = true;
+        setTimeout(() => {
+          const sidebar = document.getElementById('sidebar');
+          if (sidebar) {
+            sidebar.classList.add('collapsed');
+          }
+        }, 0);
+      }
+    }
+
+    // Navigation
+    function navigateTo(view) {
+      currentView = view;
+      render();
+    }
+
+    function renderNavigation() {
+      const nav = document.getElementById('sidebarNav');
+      
+      const navItems = [
+        { id: 'templates', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>', label: 'Templates' },
+        { id: 'runs', icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>', label: 'Runs' },
+      ];
+
+      nav.innerHTML = navItems.map(item => `
+        <div class="nav-item ${currentView === item.id ? 'active' : ''}" onclick="navigateTo('${item.id}')">
+          <span class="nav-icon">${item.icon}</span>
+          <span>${item.label}</span>
+        </div>
+      `).join('');
+    }
+
+    // Templates View
+    function renderTemplatesView() {
+      const topBar = document.getElementById('topBar');
+      topBar.innerHTML = `
+        <h1 class="top-bar-title">Templates</h1>
+        <div class="top-bar-actions">
+          <button class="btn btn-primary" onclick="startCreateTemplate()">
+            + New Template
+          </button>
+        </div>
+      `;
+
+      const content = document.getElementById('contentWrapper');
+      
+      if (templates.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <h2>No templates yet</h2>
+            <p>Create your first template to start transforming data</p>
+            <button class="btn btn-primary" onclick="startCreateTemplate()">Create Template</button>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="template-grid">
+            ${templates.map(template => `
+              <div class="template-card" onclick="editTemplate('${template.id}')">
+                <div class="template-icon">📋</div>
+                <div class="template-name">${template.name}</div>
+                <div class="template-target">Target: ${template.target_table}</div>
+                <div class="template-meta">
+                  <span>${new Date(template.updated_at).toLocaleDateString()}</span>
+                  <span>•</span>
+                  <span>v${template.version}</span>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                  <span class="badge badge-${template.status}">${template.status}</span>
+                </div>
+                <div class="template-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editTemplate('${template.id}')">
+                    ✏   Edit
+                  </button>
+                  ${template.status === 'draft' ? `
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); activateTemplate('${template.id}')">
+                      ✓ Activate
+                    </button>
+                  ` : `
+                    <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); deactivateTemplate('${template.id}')">
+                            Deactivate
+                    </button>
+                  `}
+                  <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); confirmDeleteTemplate('${template.id}')">
+                    🗑  
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+
+    // Runs View
+    function renderRunsView() {
+      const topBar = document.getElementById('topBar');
+      topBar.innerHTML = `
+        <h1 class="top-bar-title">Runs</h1>
+        <div class="top-bar-actions">
+          <button class="btn btn-primary" onclick="openProcessFileDialog()">
+            ⬆ Process File
+          </button>
+        </div>
+      `;
+
+      const content = document.getElementById('contentWrapper');
+      
+      if (fileRuns.length === 0) {
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📊</div>
+            <h2>No runs yet</h2>
+            <p>Process a file to see it here</p>
+            <button class="btn btn-primary" onclick="openProcessFileDialog()">Process File</button>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Template</th>
+                  <th>Source File</th>
+                  <th>Status</th>
+                  <th>Rows</th>
+                  <th>Started</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${fileRuns.map(run => `
+                  <tr>
+                    <td><code>${run.id.substring(0, 8)}</code></td>
+                    <td>${run.template_name}</td>
+                    <td>${run.source_filename}</td>
+                    <td><span class="badge badge-${run.status}">${run.status}</span></td>
+                    <td>${run.rows_success || 0} / ${run.rows_processed || 0}</td>
+                    <td>${new Date(run.created_at).toLocaleString()}</td>
+                    <td>
+                      ${run.status === 'completed' ? `
+                        <button class="btn btn-ghost btn-sm" onclick="reviewTransformedData('${run.id}')">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
+                          Review
+                        </button>
+                        <button class="btn btn-ghost btn-sm" onclick="downloadOutputFile('${run.id}')">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                          </svg>
+                          Download
+                        </button>
+                      ` : run.status === 'failed' ? `
+                        <span style="color: #dc2626; font-size: 0.85rem;">Failed</span>
+                      ` : `
+                        <span style="color: #f59e0b; font-size: 0.85rem;">Processing...</span>
+                      `}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    }
+
+    // Template Builder - Wizard View
+    function renderWizardView() {
+      const topBar = document.getElementById('topBar');
+      topBar.innerHTML = `
+        <h1 class="top-bar-title">${currentTemplate.name || 'New Template'}</h1>
+        <div class="top-bar-actions">
+          <button class="btn btn-ghost" onclick="cancelWizard()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTemplateConfiguration()">
+                Save Template
+          </button>
+        </div>
+      `;
+
+      const content = document.getElementById('contentWrapper');
+      
+      const steps = [
+        { num: 1, label: 'Basic Info' },
+        { num: 2, label: 'Source Data' },
+        { num: 3, label: 'Column Mapping' },
+        { num: 4, label: 'Transformations' },
+        { num: 5, label: 'Review' }
+      ];
+
+      content.innerHTML = `
+        <div class="wizard-container">
+          <div class="wizard-steps">
+            ${steps.map(step => `
+              <div class="wizard-step ${wizardStep === step.num ? 'active' : ''} ${wizardStep > step.num ? 'completed' : ''}">
+                <div class="wizard-step-number">${wizardStep > step.num ? '✓' : step.num}</div>
+                <div class="wizard-step-label">${step.label}</div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="wizard-content">
+            ${renderWizardStep()}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderWizardStep() {
+      switch(wizardStep) {
+        case 1:
+          return renderStep1BasicInfo();
+        case 2:
+          return renderStep2SourceData();
+        case 3:
+          return renderStep3ColumnMapping();
+        case 4:
+          return renderStep4Transformations();
+        case 5:
+          return renderStep5Review();
+        default:
+          return '';
+      }
+    }
+
+    function renderStep1BasicInfo() {
+      return `
+        <div class="wizard-content-header">
+          <h2 class="wizard-content-title">Basic Information</h2>
+          <p class="wizard-content-description">Set up the basic details for your template</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="templateName">Template Name</label>
+          <input type="text" id="templateName" class="form-control" 
+            placeholder="e.g., Monthly Transaction Import" 
+            value="${currentTemplate.name || ''}"
+            onchange="currentTemplate.name = this.value; render();">
+          <div class="form-hint">Give your template a descriptive name</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="templateDescription">Description (Optional)</label>
+          <textarea id="templateDescription" class="form-control" rows="3" 
+            placeholder="Describe what this template does..."
+            onchange="currentTemplate.description = this.value">${currentTemplate.description || ''}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="targetTable">Target Table</label>
+          <select id="targetTable" class="form-control" 
+            onchange="currentTemplate.target_table = this.value; handleTargetTableChange(); render();">
+            <option value="">Select target table...</option>
+            <option value="TransactionActivity" ${currentTemplate.target_table === 'TransactionActivity' ? 'selected' : ''}>
+              TransactionActivity (Fixed Schema)
+            </option>
+            <option value="InstrumentAttributeHistory" ${currentTemplate.target_table === 'InstrumentAttributeHistory' ? 'selected' : ''}>
+              InstrumentAttributeHistory (Hybrid Schema)
+            </option>
+          </select>
+          <div class="form-hint">Choose the destination table for your data</div>
+        </div>
+
+        ${currentTemplate.target_table === 'InstrumentAttributeHistory' ? `
+          <div class="info-box">
+            <p class="info-box-title">📋 Custom Columns Required</p>
+            <p class="info-box-content">
+              InstrumentAttributeHistory requires you to define custom columns in addition to the 4 fixed columns.
+              You'll upload a CSV file in the next step to define these columns.
+            </p>
+          </div>
+        ` : ''}
+
+        <div class="wizard-actions">
+          <button class="btn btn-ghost" onclick="cancelWizard()">Cancel</button>
+          <button class="btn btn-primary" onclick="nextStep()" ${!currentTemplate.name || !currentTemplate.target_table ? 'disabled' : ''}>
+            Next: Source Data →
+          </button>
+        </div>
+      `;
+    }
+
+    function renderStep2SourceData() {
+      return `
+        <div class="wizard-content-header">
+          <h2 class="wizard-content-title">Source Data</h2>
+          <p class="wizard-content-description">Upload sample files to understand your data structure</p>
+        </div>
+
+        ${currentTemplate.target_table === 'InstrumentAttributeHistory' ? `
+          <div class="card" style="background-color: #fef3c7; border-color: #fde047;">
+            <div class="card-header" style="border-bottom-color: #fde047;">
+              <h3 class="card-title" style="font-size: 1rem;">Step 1: Define Custom Columns</h3>
+            </div>
+            <div class="info-box" style="background-color: white;">
+              <p class="info-box-title">CSV Format Required:</p>
+              <pre style="background-color: #f8fafc; padding: 1rem; border-radius: 6px; font-size: 0.8125rem; overflow-x: auto;">ColumnName,DataType
+Price,decimal
+Volume,integer
+IsActive,boolean</pre>
+              <p class="info-box-content">
+                Valid types: <code>string</code>, <code>date</code>, <code>decimal</code>, <code>boolean</code>, <code>integer</code>
+              </p>
+            </div>
+            <div class="upload-zone" onclick="document.getElementById('columnDefInput').click()">
+              <div class="upload-zone-icon">📋</div>
+              <p class="upload-zone-title">Upload Column Definition CSV</p>
+              <p class="upload-zone-hint">Define your custom columns</p>
+              <input type="file" id="columnDefInput" accept=".csv" style="display: none;" onchange="handleColumnDefinitionUpload(event)">
+            </div>
+            ${customColumns.length > 0 ? `
+              <div class="file-uploaded">
+                ✓ ${customColumns.length} custom columns defined
+              </div>
+            ` : ''}
+          </div>
+        ` : ''}
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" style="font-size: 1rem;">${currentTemplate.target_table === 'InstrumentAttributeHistory' ? 'Step 2:' : ''} Upload Sample Source File</h3>
+          </div>
+          <div class="upload-zone" onclick="document.getElementById('sourceFileInput').click()">
+            <div class="upload-zone-icon">  </div>
+            <p class="upload-zone-title">Upload Sample CSV</p>
+            <p class="upload-zone-hint">We'll detect columns automatically</p>
+            <input type="file" id="sourceFileInput" accept=".csv" style="display: none;" onchange="handleSourceFileUpload(event)">
+          </div>
+          ${sourceColumns.length > 0 ? `
+            <div class="file-uploaded">
+              ✓ Detected ${sourceColumns.length} columns
+            </div>
+            <div style="margin-top: 1.5rem;">
+              <h4 style="font-size: 0.9375rem; font-weight: 600; margin-bottom: 1rem; color: #1a202c;">Set Data Types for Source Columns</h4>
+              <div class="info-box" style="margin-bottom: 1rem;">
+                <p class="info-box-title">Why set data types?</p>
+                <p class="info-box-content">
+                  Specifying data types helps ensure accurate transformations, especially for calculations with numeric values.
+                </p>
+              </div>
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #f8fafc;">
+                <table style="width: 100%; border-collapse: collapse; min-width: max-content;">
+                  <tr style="border-bottom: 2px solid #e2e8f0;">
+                    <td style="padding: 1rem; font-weight: 600; color: #64748b; font-size: 0.875rem; background-color: #f1f5f9; white-space: nowrap; min-width: 150px;">
+                      Source Column
+                    </td>
+                    ${sourceColumns.map(col => `
+                      <td style="padding: 1rem; font-weight: 600; color: #1a202c; background-color: white; white-space: nowrap; min-width: 180px; text-align: center;">
+                        ${col}
+                      </td>
+                    `).join('')}
+                  </tr>
+                  <tr>
+                    <td style="padding: 1rem; font-weight: 600; color: #64748b; font-size: 0.875rem; background-color: #f1f5f9; white-space: nowrap;">
+                      Data Type
+                    </td>
+                    ${sourceColumns.map(col => `
+                      <td style="padding: 1rem; background-color: white;">
+                        <select class="form-control" style="margin: 0; width: 100%;" 
+                          onchange="updateSourceColumnType('${col}', this.value)">
+                          <option value="string" ${currentTemplate.source_column_types?.[col]?.dataType === 'string' ? 'selected' : ''}>String</option>
+                          <option value="decimal" ${currentTemplate.source_column_types?.[col]?.dataType === 'decimal' ? 'selected' : ''}>Decimal</option>
+                          <option value="integer" ${currentTemplate.source_column_types?.[col]?.dataType === 'integer' ? 'selected' : ''}>Integer</option>
+                          <option value="date" ${currentTemplate.source_column_types?.[col]?.dataType === 'date' ? 'selected' : ''}>Date</option>
+                          <option value="boolean" ${currentTemplate.source_column_types?.[col]?.dataType === 'boolean' ? 'selected' : ''}>Boolean</option>
+                        </select>
+                      </td>
+                    `).join('')}
+                  </tr>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="wizard-actions">
+          <button class="btn btn-ghost" onclick="previousStep()">   Back</button>
+          <button class="btn btn-primary" onclick="nextStep()" ${sourceColumns.length === 0 ? 'disabled' : ''}>
+            Next: Column Mapping →
+          </button>
+        </div>
+      `;
+    }
+
+    function renderStep3ColumnMapping() {
+      const targetColumns = currentTemplate.target_table === 'TransactionActivity' 
+        ? ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', 'TransactionName', 'Amount']
+        : ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', ...customColumns.map(c => c.name)];
+
+      if (columnMappings.length === 0) {
+        initializeColumnMappings();
+      }
+
+      return `
+        <div class="wizard-content-header">
+          <h2 class="wizard-content-title">Column Mapping</h2>
+          <p class="wizard-content-description">Map source columns to target columns</p>
+        </div>
+
+        <div class="info-box">
+          <p class="info-box-title">    Mapping Types</p>
+          <p class="info-box-content">
+            <strong>Direct Pull:</strong> Copy from source column<br>
+            <strong>Fixed Value:</strong> Set a constant value<br>
+            <strong>Expression:</strong> Use a transformation rule (create in Step 4)<br>
+            <strong>Duplication:</strong> Handled by duplication rules (Step 4)
+          </p>
+        </div>
+
+        <div class="mapping-list">
+          ${columnMappings.map((mapping, index) => `
+            <div class="mapping-row">
+              <div class="mapping-label">${mapping.target}</div>
+              <select class="form-control" onchange="updateMapping(${index}, 'type', this.value); render();" style="margin: 0;">
+                <option value="direct_pull" ${mapping.type === 'direct_pull' ? 'selected' : ''}>Direct Pull</option>
+                <option value="fixed_value" ${mapping.type === 'fixed_value' ? 'selected' : ''}>Fixed Value</option>
+                <option value="expression" ${mapping.type === 'expression' ? 'selected' : ''}>Expression</option>
+                <option value="duplication" ${mapping.type === 'duplication' ? 'selected' : ''}>Duplication</option>
+              </select>
+              ${mapping.type === 'direct_pull' ? `
+                <select class="form-control" onchange="updateMapping(${index}, 'value', this.value)" style="margin: 0;">
+                  <option value="">Select source column...</option>
+                  ${sourceColumns.map(col => `
+                    <option value="${col}" ${mapping.value === col ? 'selected' : ''}>${col}</option>
+                  `).join('')}
+                </select>
+              ` : mapping.type === 'fixed_value' ? `
+                <input type="text" class="form-control" placeholder="Enter value" 
+                  value="${mapping.value || ''}" 
+                  onchange="updateMapping(${index}, 'value', this.value)" 
+                  style="margin: 0;">
+              ` : mapping.type === 'expression' ? `
+                <div style="display: flex; align-items: center; color: #5850ec; font-size: 0.875rem; font-style: italic; gap: 0.5rem;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                  </svg>
+                  <span>Define transformation rule in Step 4</span>
+                </div>
+              ` : mapping.type === 'duplication' ? `
+                <div style="display: flex; align-items: center; color: #64748b; font-size: 0.875rem; font-style: italic;">
+                  Handled by duplication rules in Step 4
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="wizard-actions">
+          <button class="btn btn-ghost" onclick="previousStep()">← Back</button>
+          <button class="btn btn-primary" onclick="nextStep()">
+            Next: Transformations →
+          </button>
+        </div>
+      `;
+    }
+
+    function renderStep4Transformations() {
+      const expressionMappings = columnMappings.filter(m => m.type === 'expression');
+      
+      return `
+        <div class="wizard-content-header">
+          <h2 class="wizard-content-title">Transformations & Duplication</h2>
+          <p class="wizard-content-description">Add transformation rules and row duplication logic</p>
+        </div>
+
+        <!-- Transformation Rules Section -->
+        <div class="card" style="margin-bottom: 2rem;">
+          <div class="card-header">
+            <h3 class="card-title" style="font-size: 1rem;">    Transformation Rules</h3>
+            <button class="btn btn-secondary btn-sm" onclick="addTransformationRule(); render();">
+              + Add Rule
+            </button>
+          </div>
+
+          ${expressionMappings.length > 0 ? `
+            <div class="info-box" style="margin: 1.5rem 1.5rem 0 1.5rem;">
+              <p class="info-box-title">📌 Fields Requiring Transformation Rules</p>
+              <p class="info-box-content">
+                These fields were set to "Expression" in Step 3: 
+                <strong>${expressionMappings.map(m => m.target).join(', ')}</strong>
+              </p>
+            </div>
+          ` : ''}
+
+          ${transformationRules.length === 0 ? `
+            <div style="text-align: center; padding: 3rem 2rem; color: #64748b;">
+              <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🔧</div>
+              <p>No transformation rules yet</p>
+              <p style="font-size: 0.875rem;">Transformation rules are optional. Skip if not needed.</p>
+              ${expressionMappings.length > 0 ? `
+                <p style="font-size: 0.875rem; color: #f59e0b; margin-top: 1rem;">
+                       You have ${expressionMappings.length} field(s) mapped as "Expression". Add rules to complete the mapping.
+                </p>
+              ` : ''}
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              ${transformationRules.map((rule, ruleIndex) => `
+                <div class="rule-card">
+                  <div class="rule-card-header">
+                    <span class="rule-card-title">Rule ${ruleIndex + 1}: ${rule.name || rule.type}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeTransformationRule('${rule.id}'); render();">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div style="display: grid; grid-template-columns: ${expressionMappings.length > 0 ? '1fr 1fr 2fr' : '1fr 2fr'}; gap: 1rem;">
+                    <div class="form-group" style="margin: 0;">
+                      <label class="form-label" for="ruleType${ruleIndex}">Type</label>
+                      <select id="ruleType${ruleIndex}" class="form-control" onchange="updateTransformationRule('${rule.id}', 'type', this.value); render();">
+                        <option value="replace" ${rule.type === 'replace' ? 'selected' : ''}>Replace</option>
+                        <option value="calculate" ${rule.type === 'calculate' ? 'selected' : ''}>Calculate</option>
+                        <option value="concatenate" ${rule.type === 'concatenate' ? 'selected' : ''}>Concatenate</option>
+                        <option value="conditional" ${rule.type === 'conditional' ? 'selected' : ''}>Conditional</option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label class="form-label" for="ruleTarget${ruleIndex}">Apply To Field</label>
+                      <select id="ruleTarget${ruleIndex}" class="form-control" onchange="updateTransformationRule('${rule.id}', 'targetField', this.value); updateMappingForRule('${rule.id}', this.value);">
+                        <option value="">Select field...</option>
+                        ${expressionMappings.map(m => `
+                          <option value="${m.target}" ${rule.targetField === m.target ? 'selected' : ''}>
+                            ${m.target}
+                          </option>
+                        `).join('')}
+                        <option value="__duplication__" ${rule.targetField === '__duplication__' ? 'selected' : ''}>
+                          Duplication
+                        </option>
+                      </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                      <label class="form-label" for="ruleName${ruleIndex}">Name</label>
+                      <input type="text" id="ruleName${ruleIndex}" class="form-control" placeholder="e.g., Add Tax" 
+                        value="${rule.name || ''}" 
+                        onchange="updateTransformationRule('${rule.id}', 'name', this.value)">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-top: 1rem;">
+                    <label class="form-label" for="ruleExpr${ruleIndex}">
+                      Expression
+                      <span style="cursor: help; color: #5850ec; margin-left: 0.5rem;" title="${getTooltipForRuleType(rule.type)}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="16" x2="12" y2="12"></line>
+                          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                      </span>
+                    </label>
+                    <div style="display: flex; gap: 0.5rem;">
+                      <input type="text" id="ruleExpr${ruleIndex}" class="form-control" 
+                        placeholder="${getPlaceholderForRuleType(rule.type)}" 
+                        value="${rule.expression || ''}" 
+                        oninput="updateTransformationRule('${rule.id}', 'expression', this.value)"
+                        style="flex: 1;">
+                      <button type="button" class="btn btn-secondary" onclick="event.preventDefault(); testTransformationRule('${rule.id}');" 
+                        style="white-space: nowrap;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                          <path d="M9 2v6"></path>
+                          <path d="M15 2v6"></path>
+                          <path d="M12 17v5"></path>
+                          <path d="M5 8h14"></path>
+                          <path d="M6 11V8h12v3"></path>
+                          <path d="M6 11a6 6 0 0 0 12 0"></path>
+                        </svg>
+                        Test
+                      </button>
+                    </div>
+                    <div class="form-hint">${getHintForRuleType(rule.type)}</div>
+                    <div id="test-result-${rule.id}" style="margin-top: 0.75rem;"></div>
+                  </div>
+
+                  ${!rule.saved ? `
+                    <div style="margin-top: 1rem; text-align: right;">
+                      <button class="btn btn-primary btn-sm" 
+                        onclick="saveTransformationRule('${rule.id}'); render();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                          <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+
+          <!-- Transformation Rules Table -->
+          ${transformationRules.filter(r => r.saved).length > 0 ? `
+            <div style="margin-top: 2rem;">
+              <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1a202c;">
+                💾 Transformation Rules
+              </h4>
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Apply To Field</th>
+                      <th>Expression</th>
+                      <th style="width: 100px; text-align: center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${transformationRules.filter(r => r.saved).map(rule => `
+                      <tr>
+                        <td><strong>${rule.name || 'Unnamed'}</strong></td>
+                        <td>
+                          <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #eff6ff; color: #1e40af; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                            ${rule.type}
+                          </span>
+                        </td>
+                        <td>${rule.targetField === '__duplication__' ? 'Duplication' : rule.targetField}</td>
+                        <td style="font-family: monospace; font-size: 0.8125rem; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                          ${rule.expression}
+                        </td>
+                        <td style="text-align: center;">
+                          <button class="btn btn-ghost btn-sm" onclick="editTransformationRule('${rule.id}'); render();" 
+                            style="padding: 0.25rem 0.5rem; margin-right: 0.25rem;" title="Edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                          </button>
+                          <button class="btn btn-danger btn-sm" onclick="deleteTransformationRule('${rule.id}'); render();" 
+                            style="padding: 0.25rem 0.5rem;" title="Delete">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Duplication Rules Section -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" style="font-size: 1rem;">   Duplication Rules</h3>
+            <button class="btn btn-secondary btn-sm" onclick="addDuplicationRule(); render();">
+              + Add Duplication
+            </button>
+          </div>
+
+          <div class="info-box" style="margin-bottom: 1rem;">
+            <p class="info-box-title">What are duplication rules?</p>
+            <p class="info-box-content">
+              Duplication rules create multiple output rows from one source row. For each duplication rule, 
+              you can override specific columns with different values while keeping other columns the same.
+            </p>
+          </div>
+
+          ${duplicationRules.length === 0 ? `
+            <div style="text-align: center; padding: 3rem 2rem; color: #64748b;">
+              <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">🔁</div>
+              <p>No duplication rules yet</p>
+              <p style="font-size: 0.875rem;">Duplication is optional. Skip if each source row creates one output row.</p>
+            </div>
+          ` : `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+              ${duplicationRules.map((dupRule, dupIndex) => `
+                <div class="rule-card">
+                  <div class="rule-card-header">
+                    <span class="rule-card-title">Duplication ${dupIndex + 1}: ${dupRule.name || 'Unnamed'}</span>
+                    <button class="btn btn-danger btn-sm" onclick="removeDuplicationRule('${dupRule.id}'); render();">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" for="dupName${dupIndex}">Name</label>
+                    <input type="text" id="dupName${dupIndex}" class="form-control" placeholder="e.g., Credit Row" 
+                      value="${dupRule.name || ''}" 
+                      onchange="updateDuplicationRule('${dupRule.id}', 'name', this.value)">
+                  </div>
+
+                  <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                      <label class="form-label" style="margin: 0;">Column Overrides</label>
+                      <button class="btn btn-secondary btn-sm" onclick="addDuplicationOverride('${dupRule.id}'); render();">
+                        + Add Override
+                      </button>
+                    </div>
+                    
+                    ${!dupRule.overrides || dupRule.overrides.length === 0 ? `
+                      <div style="padding: 1rem; background-color: #f8fafc; border-radius: 6px; text-align: center; color: #64748b; font-size: 0.875rem;">
+                        No overrides yet. Add overrides to customize specific columns for this duplicated row.
+                      </div>
+                    ` : `
+                      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        ${dupRule.overrides.map((override, overrideIndex) => `
+                          <div style="display: grid; grid-template-columns: 150px 120px 1fr 40px; gap: 0.75rem; align-items: center; padding: 0.75rem; background-color: white; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <select class="form-control" style="margin: 0;" onchange="updateDuplicationOverride('${dupRule.id}', ${overrideIndex}, 'targetColumn', this.value)">
+                              <option value="">Column...</option>
+                              ${columnMappings.filter(m => m.type === 'duplication').map(m => `
+                                <option value="${m.target}" ${override.targetColumn === m.target ? 'selected' : ''}>${m.target}</option>
+                              `).join('')}
+                            </select>
+                            
+                            <select class="form-control" style="margin: 0;" onchange="updateDuplicationOverride('${dupRule.id}', ${overrideIndex}, 'type', this.value); render();">
+                              <option value="fixed_value" ${override.type === 'fixed_value' ? 'selected' : ''}>Fixed</option>
+                              <option value="source_column" ${override.type === 'source_column' ? 'selected' : ''}>Source</option>
+                              <option value="expression" ${override.type === 'expression' ? 'selected' : ''}>Expression</option>
+                            </select>
+                            
+                            ${override.type === 'fixed_value' ? `
+                              <input type="text" class="form-control" style="margin: 0;" placeholder="Value" 
+                                value="${override.value || ''}" 
+                                onchange="updateDuplicationOverride('${dupRule.id}', ${overrideIndex}, 'value', this.value)">
+                            ` : override.type === 'source_column' ? `
+                              <select class="form-control" style="margin: 0;" onchange="updateDuplicationOverride('${dupRule.id}', ${overrideIndex}, 'value', this.value)">
+                                <option value="">Select...</option>
+                                ${sourceColumns.map(col => `
+                                  <option value="${col}" ${override.value === col ? 'selected' : ''}>${col}</option>
+                                `).join('')}
+                              </select>
+                            ` : override.type === 'expression' ? `
+                              <select class="form-control" style="margin: 0;" onchange="updateDuplicationOverride('${dupRule.id}', ${overrideIndex}, 'value', this.value)">
+                                <option value="">Select rule...</option>
+                                ${transformationRules.filter(rule => rule.targetField === '__duplication__' || !rule.targetField || expressionMappings.some(m => m.target === override.targetColumn && m.value === rule.id)).map(rule => `
+                                  <option value="${rule.id}" ${override.value === rule.id ? 'selected' : ''}>
+                                    ${rule.name || rule.type}${rule.targetField === '__duplication__' ? ' &#128257;' : ''}
+                                  </option>
+                                `).join('')}
+                              </select>
+                            ` : ''}
+                            
+                            <button class="btn btn-danger btn-sm" style="padding: 0.5rem; margin: 0;" onclick="removeDuplicationOverride('${dupRule.id}', ${overrideIndex}); render();">
+                              &times;
+                            </button>
+                          </div>
+                        `).join('')}
+                      </div>
+                    `}
+                  </div>
+
+                  ${!dupRule.saved ? `
+                    <div style="margin-top: 1rem; text-align: right;">
+                      <button class="btn btn-primary btn-sm" 
+                        onclick="saveDuplicationRule('${dupRule.id}'); render();">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                          <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `}
+
+          <!-- Duplication Rules Table -->
+          ${duplicationRules.filter(r => r.saved).length > 0 ? `
+            <div style="margin-top: 2rem;">
+              <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #1a202c;">
+                💾 Duplication Rules
+              </h4>
+              <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Overrides</th>
+                      <th style="width: 100px; text-align: center;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${duplicationRules.filter(r => r.saved).map(dupRule => `
+                      <tr>
+                        <td><strong>${dupRule.name || 'Unnamed'}</strong></td>
+                        <td>
+                          ${dupRule.overrides && dupRule.overrides.length > 0 ? `
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                              ${dupRule.overrides.map(override => `
+                                <span style="display: inline-block; padding: 0.25rem 0.5rem; background-color: #f0fdf4; color: #166534; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">
+                                  ${override.targetColumn}: ${override.type === 'fixed_value' ? override.value : override.type === 'source_column' ? `{${override.value}}` : 'expression'}
+                                </span>
+                              `).join('')}
+                            </div>
+                          ` : '<span style="color: #94a3b8; font-style: italic;">No overrides</span>'}
+                        </td>
+                        <td style="text-align: center;">
+                          <button class="btn btn-ghost btn-sm" onclick="editDuplicationRule('${dupRule.id}'); render();" 
+                            style="padding: 0.25rem 0.5rem; margin-right: 0.25rem;" title="Edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                          </button>
+                          <button class="btn btn-danger btn-sm" onclick="deleteDuplicationRule('${dupRule.id}'); render();" 
+                            style="padding: 0.25rem 0.5rem;" title="Delete">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="wizard-actions">
+          <button class="btn btn-ghost" onclick="previousStep()">← Back</button>
+          <button class="btn btn-primary" onclick="nextStep()">
+            Next: Review →
+          </button>
+        </div>
+      `;
+    }
+
+    function renderStep5Review() {
+      const targetColumns = currentTemplate.target_table === 'TransactionActivity' 
+        ? ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', 'TransactionName', 'Amount']
+        : ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', ...customColumns.map(c => c.name)];
+
+      return `
+        <div class="wizard-content-header">
+          <h2 class="wizard-content-title">Review & Save</h2>
+          <p class="wizard-content-description">Review your template configuration</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <p class="stat-label">Source Columns</p>
+            <p class="stat-value">${sourceColumns.length}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Target Columns</p>
+            <p class="stat-value">${targetColumns.length}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Mappings</p>
+            <p class="stat-value">${columnMappings.filter(m => m.value || m.type === 'duplication').length}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Transformations</p>
+            <p class="stat-value">${transformationRules.length}</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" style="font-size: 1rem;">Template Details</h3>
+          </div>
+          <div style="display: grid; gap: 0.75rem; font-size: 0.875rem;">
+            <div style="display: grid; grid-template-columns: 150px 1fr; padding: 0.75rem; background-color: #f8fafc; border-radius: 6px;">
+              <strong>Name:</strong>
+              <span>${currentTemplate.name}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 150px 1fr; padding: 0.75rem; background-color: #f8fafc; border-radius: 6px;">
+              <strong>Target Table:</strong>
+              <span>${currentTemplate.target_table}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 150px 1fr; padding: 0.75rem; background-color: #f8fafc; border-radius: 6px;">
+              <strong>Description:</strong>
+              <span>${currentTemplate.description || 'None'}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 150px 1fr; padding: 0.75rem; background-color: #f8fafc; border-radius: 6px;">
+              <strong>Duplication Rules:</strong>
+              <span>${duplicationRules.length} rule(s)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard-actions">
+          <button class="btn btn-ghost" onclick="previousStep()">← Back</button>
+          <button class="btn btn-primary" onclick="saveTemplateConfiguration()">
+            &#128190; Save Template
+          </button>
+        </div>
+      `;
+    }
+
+    // Helper Functions for Wizard
+    function getTooltipForRuleType(type) {
+      switch(type) {
+        case 'replace': 
+          return 'Replace Text Example:\nUSD | $\n(Replaces "USD" with "$")\n\nSpecial: Use "empty" to remove text\nUSD | empty';
+        case 'calculate': 
+          return 'Calculate Example:\n{Amount} * 1.13\n(Multiply Amount by 1.13 for tax)\n\nSupports: + - * / ( )\n{Price} * {Quantity}\n({Amount} + 100) * 0.9';
+        case 'concatenate': 
+          return 'Concatenate Example:\n{FirstName} + " " + {LastName}\n(Joins columns with space)\n\n{City} + ", " + {State}\n"Account: " + {AccountNumber}';
+        case 'conditional': 
+          return 'Conditional Example:\nIF {Amount} > 1000 THEN "High" ELSE "Low"\n\nSupports: > < >= <= ==\nIF {Status} == "Active" THEN "Y" ELSE "N"';
+        default: 
+          return '';
+      }
+    }
+
+    function getPlaceholderForRuleType(type) {
+      switch(type) {
+        case 'replace': return 'e.g., USD | $';
+        case 'calculate': return 'e.g., {Amount} * 1.1';
+        case 'concatenate': return 'e.g., {FirstName} + " " + {LastName}';
+        case 'conditional': return 'e.g., IF {Amount} > 1000 THEN "High" ELSE "Low"';
+        default: return '';
+      }
+    }
+
+    function getHintForRuleType(type) {
+      switch(type) {
+        case 'replace': return '📝 Format: find_text | replace_text (Example: USD | $ or USD | empty to remove)';
+        case 'calculate': return '🔢 Use {ColumnName} for columns, supports +, -, *, /, ( ) (Example: {Amount} * 1.13)';
+        case 'concatenate': return '   Use {ColumnName} for columns, combine with + (Example: {FirstName} + " " + {LastName})';
+        case 'conditional': return '   Format: IF condition THEN value ELSE other (Example: IF {Amount} > 1000 THEN "High" ELSE "Low")';
+        default: return '';
+      }
+    }
+
+    function nextStep() {
+      if (wizardStep < 5) {
+        wizardStep++;
+        render();
+      }
+    }
+
+    function previousStep() {
+      if (wizardStep > 1) {
+        wizardStep--;
+        render();
+      }
+    }
+
+    function cancelWizard() {
+      currentTemplate = null;
+      wizardStep = 1;
+      sourceColumns = [];
+      columnMappings = [];
+      transformationRules = [];
+      customColumns = [];
+      sampleSourceData = [];
+      duplicationRules = [];
+      navigateTo('templates');
+    }
+
+    // Template CRUD Operations
+    function startCreateTemplate() {
+      currentTemplate = {
+        id: generateId(),
+        name: '',
+        description: '',
+        target_table: '',
+        status: 'draft',
+        version: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        mapping_rules: {},
+        source_column_types: {}
+      };
+      wizardStep = 1;
+      sourceColumns = [];
+      columnMappings = [];
+      transformationRules = [];
+      customColumns = [];
+      sampleSourceData = [];
+      duplicationRules = [];
+      currentView = 'wizard';
+      render();
+    }
+
+    function editTemplate(id) {
+      const template = templates.find(t => t.id === id);
+      if (!template) return;
+      
+      currentTemplate = JSON.parse(JSON.stringify(template)); // Deep copy
+      wizardStep = 1;
+      
+      if (template.mapping_rules) {
+        sourceColumns = template.mapping_rules.source_columns || [];
+        columnMappings = template.mapping_rules.column_mappings || [];
+        transformationRules = template.mapping_rules.transformation_rules || [];
+        customColumns = template.mapping_rules.custom_columns || [];
+        duplicationRules = template.mapping_rules.duplication_rules || [];
+        sampleSourceData = template.mapping_rules.sample_source_data || [];
+      } else {
+        sourceColumns = [];
+        columnMappings = [];
+        transformationRules = [];
+        customColumns = [];
+        duplicationRules = [];
+        sampleSourceData = [];
+      }
+      
+      currentView = 'wizard';
+      render();
+    }
+
+    function saveTemplateConfiguration() {
+      if (!currentTemplate || !currentTemplate.name || !currentTemplate.target_table) {
+        showToast('       Please complete all required fields', 'error');
+        return;
+      }
+
+      currentTemplate.mapping_rules = {
+        source_columns: sourceColumns,
+        column_mappings: columnMappings,
+        transformation_rules: transformationRules,
+        custom_columns: customColumns,
+        duplication_rules: duplicationRules,
+        source_column_types: currentTemplate.source_column_types || {},
+        sample_source_data: sampleSourceData
+      };
+      currentTemplate.updated_at = new Date().toISOString();
+
+      const index = templates.findIndex(t => t.id === currentTemplate.id);
+      if (index !== -1) {
+        templates[index] = currentTemplate;
+      } else {
+        templates.push(currentTemplate);
+      }
+      
+      saveToStorage();
+      showToast('Template saved successfully!', 'success');
+      
+      setTimeout(() => {
+        cancelWizard();
+      }, 1000);
+    }
+
+    function activateTemplate(id) {
+      const template = templates.find(t => t.id === id);
+      if (!template) return;
+      
+      template.status = 'active';
+      template.updated_at = new Date().toISOString();
+      saveToStorage();
+      render();
+      showToast('Template activated', 'success');
+    }
+
+    function deactivateTemplate(id) {
+      const template = templates.find(t => t.id === id);
+      if (!template) return;
+      
+      template.status = 'draft';
+      template.updated_at = new Date().toISOString();
+      saveToStorage();
+      render();
+      showToast('Template deactivated', 'success');
+    }
+
+    function confirmDeleteTemplate(id) {
+      const modal = document.createElement('div');
+      modal.className = 'modal show';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">Delete Template?</h2>
+          </div>
+          <div class="modal-body">
+            <p>This action cannot be undone. Are you sure?</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="this.closest('.modal').remove()">Cancel</button>
+            <button class="btn btn-danger" onclick="deleteTemplate('${id}'); this.closest('.modal').remove();">Delete</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    function deleteTemplate(id) {
+      templates = templates.filter(t => t.id !== id);
+      saveToStorage();
+      render();
+      showToast('Template deleted', 'success');
+    }
+
+    // File Upload Handlers
+    function handleTargetTableChange() {
+      customColumns = [];
+      columnMappings = [];
+      render();
+    }
+
+    function handleColumnDefinitionUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          const startIndex = lines[0].toLowerCase().includes('column') ? 1 : 0;
+          
+          customColumns = [];
+          for (let i = startIndex; i < lines.length; i++) {
+            const parts = lines[i].split(',').map(p => p.trim());
+            if (parts.length >= 2 && parts[0] && parts[1]) {
+              const columnName = parts[0];
+              const dataType = parts[1].toLowerCase();
+              
+              if (['string', 'date', 'decimal', 'boolean', 'integer'].includes(dataType)) {
+                customColumns.push({
+                  name: columnName,
+                  dataType: dataType
+                });
+              }
+            }
+          }
+          
+          if (customColumns.length > 0) {
+            showToast(`Loaded ${customColumns.length} custom columns`, 'success');
+            render();
+          } else {
+            showToast('No valid columns found', 'error');
+          }
+        } catch (error) {
+          showToast('Error reading file: ' + error.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function handleSourceFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          if (lines.length > 0) {
+            const headers = lines[0].split(',').map(h => h.trim());
+            sourceColumns = headers;
+            
+            // Initialize source_column_types if not exists
+            if (!currentTemplate.source_column_types) {
+              currentTemplate.source_column_types = {};
+            }
+            
+            sampleSourceData = [];
+            for (let i = 1; i < Math.min(6, lines.length); i++) {
+              const values = lines[i].split(',').map(v => v.trim());
+              const row = {};
+              headers.forEach((header, index) => {
+                row[header] = values[index] || '';
+              });
+              sampleSourceData.push(row);
+            }
+            
+            // Intelligently detect data types for new columns
+            headers.forEach(header => {
+              if (!currentTemplate.source_column_types[header]) {
+                const detectedType = detectDataType(header, sampleSourceData);
+                currentTemplate.source_column_types[header] = { dataType: detectedType };
+              }
+            });
+            
+            showToast(`Detected ${sourceColumns.length} columns`, 'success');
+            render();
+          }
+        } catch (error) {
+          showToast('Error reading file: ' + error.message, 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function detectDataType(columnName, sampleData) {
+      if (!sampleData || sampleData.length === 0) {
+        return 'string';
+      }
+      
+      // Collect all non-empty values for this column
+      const values = sampleData
+        .map(row => row[columnName])
+        .filter(val => val !== null && val !== undefined && String(val).trim() !== '');
+      
+      if (values.length === 0) {
+        return 'string';
+      }
+      
+      // Check for boolean
+      const booleanValues = ['true', 'false', 'yes', 'no', 'y', 'n', '0', '1'];
+      const allBoolean = values.every(val => booleanValues.includes(String(val).toLowerCase()));
+      if (allBoolean) {
+        return 'boolean';
+      }
+      
+      // Check for date patterns
+      const datePatterns = [
+        /^\d{4}-\d{2}-\d{2}$/,  // YYYY-MM-DD
+        /^\d{2}\/\d{2}\/\d{4}$/,  // MM/DD/YYYY
+        /^\d{2}-\d{2}-\d{4}$/,  // DD-MM-YYYY
+        /^\d{4}\/\d{2}\/\d{2}$/,  // YYYY/MM/DD
+      ];
+      
+      const allDates = values.every(val => {
+        const strVal = String(val).trim();
+        return datePatterns.some(pattern => pattern.test(strVal)) || !isNaN(Date.parse(strVal));
+      });
+      
+      if (allDates) {
+        return 'date';
+      }
+      
+      // Check for numeric values
+      const numericValues = values.map(val => {
+        const cleaned = String(val).replace(/[^0-9.\-]/g, '');
+        return parseFloat(cleaned);
+      });
+      
+      const allNumeric = numericValues.every(val => !isNaN(val) && isFinite(val));
+      
+      if (allNumeric) {
+        // Check if all numbers are integers
+        const allIntegers = numericValues.every(val => Number.isInteger(val));
+        
+        if (allIntegers) {
+          return 'integer';
+        } else {
+          return 'decimal';
+        }
+      }
+      
+      // Default to string
+      return 'string';
+    }
+
+    function updateSourceColumnType(columnName, dataType) {
+      if (!currentTemplate.source_column_types) {
+        currentTemplate.source_column_types = {};
+      }
+      currentTemplate.source_column_types[columnName] = { dataType: dataType };
+    }
+
+    // Mapping Functions
+    function initializeColumnMappings() {
+      const targetColumns = currentTemplate.target_table === 'TransactionActivity' 
+        ? ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', 'TransactionName', 'Amount']
+        : ['PostingDate', 'EffectiveDate', 'InstrumentID', 'AttributeID', ...customColumns.map(c => c.name)];
+
+      columnMappings = targetColumns.map(targetCol => {
+        const existing = columnMappings.find(m => m.target === targetCol);
+        return existing || {
+          target: targetCol,
+          type: 'direct_pull',
+          value: ''
+        };
+      });
+    }
+
+    function updateMapping(index, field, value) {
+      if (columnMappings[index]) {
+        columnMappings[index][field] = value;
+        if (field === 'type') {
+          columnMappings[index].value = '';
+        }
+      }
+    }
+
+    // Transformation Rule Functions
+    function addTransformationRule() {
+      transformationRules.push({
+        id: generateId(),
+        type: 'replace',
+        name: '',
+        expression: '',
+        targetField: '',
+        saved: false
+      });
+    }
+
+    function removeTransformationRule(id) {
+      transformationRules = transformationRules.filter(r => r.id !== id);
+      
+      // Also remove from any mappings that reference this rule
+      columnMappings.forEach(mapping => {
+        if (mapping.type === 'expression' && mapping.value === id) {
+          mapping.value = '';
+        }
+      });
+      
+      if (editingRuleId === id) {
+        editingRuleId = null;
+      }
+    }
+
+    function updateTransformationRule(id, field, value) {
+      const rule = transformationRules.find(r => r.id === id);
+      if (rule) {
+        rule[field] = value;
+      }
+    }
+
+    function saveTransformationRule(id) {
+      const rule = transformationRules.find(r => r.id === id);
+      if (rule && rule.expression && rule.targetField) {
+        rule.saved = true;
+        editingRuleId = null;
+        showToast('Rule saved successfully!', 'success');
+      }
+    }
+
+    function editTransformationRule(id) {
+      const rule = transformationRules.find(r => r.id === id);
+      if (rule) {
+        rule.saved = false;
+        editingRuleId = id;
+      }
+    }
+
+    function deleteTransformationRule(id) {
+      transformationRules = transformationRules.filter(r => r.id !== id);
+      
+      // Also remove from any mappings that reference this rule
+      columnMappings.forEach(mapping => {
+        if (mapping.type === 'expression' && mapping.value === id) {
+          mapping.value = '';
+        }
+      });
+      
+      showToast('Rule deleted', 'success');
+    }
+
+    function updateMappingForRule(ruleId, targetField) {
+      if (!targetField || targetField === '__duplication__') return;
+      
+      const mappingIndex = columnMappings.findIndex(m => m.target === targetField);
+      
+      if (mappingIndex !== -1 && columnMappings[mappingIndex].type === 'expression') {
+        columnMappings[mappingIndex].value = ruleId;
+      }
+    }
+
+    function testTransformationRule(ruleId) {
+      const rule = transformationRules.find(r => r.id === ruleId);
+      const resultDiv = document.getElementById(`test-result-${ruleId}`);
+      
+      if (!rule || !rule.expression) {
+        resultDiv.innerHTML = `
+          <div style="padding: 0.75rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.875rem; color: #991b1b;">
+            No expression to test
+          </div>
+        `;
+        return;
+      }
+      
+      if (!sampleSourceData || sampleSourceData.length === 0) {
+        resultDiv.innerHTML = `
+          <div style="padding: 0.75rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; font-size: 0.875rem; color: #991b1b;">
+            No sample data available. Upload a sample CSV in Step 2.
+          </div>
+        `;
+        return;
+      }
+      
+      const testRows = sampleSourceData.slice(0, 3);
+      const results = [];
+      
+      testRows.forEach((row, index) => {
+        try {
+          const result = applyTransformationRule(rule, row, currentTemplate);
+          results.push({
+            index: index + 1,
+            success: true,
+            result: result,
+            row: row
+          });
+        } catch (error) {
+          results.push({
+            index: index + 1,
+            success: false,
+            error: error.message,
+            row: row
+          });
+        }
+      });
+      
+      const hasErrors = results.some(r => !r.success);
+      const hasSuccess = results.some(r => r.success);
+      
+      let html = `
+        <div style="padding: 1rem; background-color: ${hasErrors ? '#fef2f2' : '#f0fdf4'}; border: 1px solid ${hasErrors ? '#fecaca' : '#86efac'}; border-radius: 8px;">
+          <div style="font-weight: 600; margin-bottom: 0.75rem; color: ${hasErrors ? '#991b1b' : '#166534'}; font-size: 0.875rem;">
+            Test Results (First ${results.length} rows) ${hasErrors ? '- Errors Found' : '- Success'}
+          </div>
+      `;
+      
+      results.forEach(result => {
+        if (result.success) {
+          html += `
+            <div style="margin-bottom: 0.75rem; padding: 0.75rem; background-color: white; border-radius: 6px; border: 1px solid #d1fae5;">
+              <div style="display: grid; grid-template-columns: 80px 1fr; gap: 0.5rem; font-size: 0.8125rem;">
+                <strong style="color: #059669;">Row ${result.index}:</strong>
+                <span style="font-family: monospace; color: #166534;">${result.result}</span>
+              </div>
+            </div>
+          `;
+        } else {
+          html += `
+            <div style="margin-bottom: 0.75rem; padding: 0.75rem; background-color: #fef2f2; border-radius: 6px; border: 1px solid #fecaca;">
+              <div style="display: grid; grid-template-columns: 80px 1fr; gap: 0.5rem; font-size: 0.8125rem;">
+                <strong style="color: #dc2626;">Row ${result.index}:</strong>
+                <span style="color: #991b1b;">Error: ${result.error}</span>
+              </div>
+            </div>
+          `;
+        }
+      });
+      
+      html += '</div>';
+      resultDiv.innerHTML = html;
+    }
+
+    // Duplication Rule Functions
+    function addDuplicationRule() {
+      const newRule = {
+        id: generateId(),
+        name: '',
+        overrides: [],
+        saved: false
+      };
+      
+      duplicationRules.push(newRule);
+    }
+
+    function removeDuplicationRule(id) {
+      duplicationRules = duplicationRules.filter(r => r.id !== id);
+      
+      if (editingDuplicationId === id) {
+        editingDuplicationId = null;
+      }
+    }
+
+    function updateDuplicationRule(id, field, value) {
+      const rule = duplicationRules.find(r => r.id === id);
+      if (rule) {
+        rule[field] = value;
+      }
+    }
+
+    function saveDuplicationRule(id) {
+      const rule = duplicationRules.find(r => r.id === id);
+      if (rule && rule.name && rule.overrides && rule.overrides.length > 0) {
+        rule.saved = true;
+        editingDuplicationId = null;
+        showToast('Duplication rule saved successfully!', 'success');
+      }
+    }
+
+    function editDuplicationRule(id) {
+      const rule = duplicationRules.find(r => r.id === id);
+      if (rule) {
+        rule.saved = false;
+        editingDuplicationId = id;
+      }
+    }
+
+    function deleteDuplicationRule(id) {
+      duplicationRules = duplicationRules.filter(r => r.id !== id);
+      showToast('Duplication rule deleted', 'success');
+    }
+
+    function addDuplicationOverride(ruleId) {
+      const rule = duplicationRules.find(r => r.id === ruleId);
+      if (rule) {
+        if (!rule.overrides) {
+          rule.overrides = [];
+        }
+        rule.overrides.push({
+          targetColumn: '',
+          type: 'fixed_value',
+          value: ''
+        });
+      }
+    }
+
+    function removeDuplicationOverride(ruleId, overrideIndex) {
+      const rule = duplicationRules.find(r => r.id === ruleId);
+      if (rule && rule.overrides) {
+        rule.overrides.splice(overrideIndex, 1);
+      }
+    }
+
+    function updateDuplicationOverride(ruleId, overrideIndex, field, value) {
+      const rule = duplicationRules.find(r => r.id === ruleId);
+      if (rule && rule.overrides && rule.overrides[overrideIndex]) {
+        rule.overrides[overrideIndex][field] = value;
+        if (field === 'type') {
+          rule.overrides[overrideIndex].value = '';
+        }
+      }
+    }
+
+    // Process File Functions
+    function openProcessFileDialog() {
+      const modal = document.getElementById('processFileModal');
+      const select = document.getElementById('templateSelect');
+      
+      select.innerHTML = '<option value="">Choose a template...</option>';
+      templates.filter(t => t.status === 'active').forEach(template => {
+        const option = document.createElement('option');
+        option.value = template.id;
+        option.textContent = `${template.name} (${template.target_table})`;
+        select.appendChild(option);
+      });
+      
+      modal.classList.add('show');
+    }
+
+    function closeProcessFileDialog() {
+      const modal = document.getElementById('processFileModal');
+      modal.classList.remove('show');
+      document.getElementById('processFileForm').reset();
+      document.getElementById('fileNameDisplay').innerHTML = '';
+      selectedFile = null;
+    }
+
+    function submitProcessFile() {
+      const templateId = document.getElementById('templateSelect').value;
+      const fileInput = document.getElementById('fileInput');
+      
+      if (!templateId || !fileInput.files.length) {
+        showToast('Please select template and file', 'error');
+        return;
+      }
+
+      const file = fileInput.files[0];
+      
+      try {
+        closeProcessFileDialog();
+        processFile(templateId, file);
+        navigateTo('runs');
+        showToast('Processing started!', 'success');
+      } catch (error) {
+        showToast('Failed to process: ' + error.message, 'error');
+      }
+    }
+
+    // Data Type Formatting Function
+    function formatValueByDataType(value, dataType) {
+      if (!value && value !== 0 && value !== false) {
+        return '';
+      }
+      
+      const stringValue = String(value).trim();
+      
+      switch(dataType) {
+        case 'string':
+          return stringValue;
+          
+        case 'decimal':
+          const cleanedDecimal = stringValue.replace(/[^0-9.\-]/g, '');
+          const decimalValue = parseFloat(cleanedDecimal);
+          
+          if (isNaN(decimalValue)) {
+            return '0.00';
+          }
+          
+          return decimalValue.toFixed(2);
+          
+        case 'integer':
+          const cleanedInt = stringValue.replace(/[^0-9\-]/g, '');
+          const intValue = parseInt(cleanedInt, 10);
+          
+          if (isNaN(intValue)) {
+            return '0';
+          }
+          
+          return intValue.toString();
+          
+        case 'date':
+          try {
+            const dateValue = new Date(stringValue);
+            
+            if (isNaN(dateValue.getTime())) {
+              return stringValue;
+            }
+            
+            const year = dateValue.getFullYear();
+            const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+            const day = String(dateValue.getDate()).padStart(2, '0');
+            
+            return `${year}-${month}-${day}`;
+          } catch (e) {
+            return stringValue;
+          }
+          
+        case 'boolean':
+          const lowerValue = stringValue.toLowerCase();
+          
+          if (lowerValue === 'true' || lowerValue === '1' || lowerValue === 'yes' || lowerValue === 'y') {
+            return 'true';
+          } else if (lowerValue === 'false' || lowerValue === '0' || lowerValue === 'no' || lowerValue === 'n' || lowerValue === '') {
+            return 'false';
+          }
+          
+          return 'false';
+          
+        default:
+          return stringValue;
+      }
+    }
+
+    // File Processing Logic
+    function processFile(templateId, file) {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) throw new Error('Template not found');
+      
+      const runId = generateId();
+      const fileRun = {
+        id: runId,
+        template_id: templateId,
+        template_name: template.name,
+        source_filename: file.name,
+        status: 'processing',
+        rows_processed: 0,
+        rows_success: 0,
+        rows_error: 0,
+        created_at: new Date().toISOString(),
+        completed_at: null,
+        output_file: null
+      };
+      
+      fileRuns.unshift(fileRun);
+      saveToStorage();
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const text = e.target.result;
+          const lines = text.split('\n').filter(line => line.trim());
+          
+          if (lines.length < 2) {
+            throw new Error('CSV must have header and data rows');
+          }
+          
+          const headers = lines[0].split(',').map(h => h.trim());
+          const sourceData = [];
+          
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(',').map(v => v.trim());
+            const row = {};
+            headers.forEach((header, index) => {
+              row[header] = values[index] || '';
+            });
+            sourceData.push(row);
+          }
+          
+          const transformedData = [];
+          const errorData = [];
+          
+          const hasDuplicationRules = template.mapping_rules && 
+                                       template.mapping_rules.duplication_rules && 
+                                       template.mapping_rules.duplication_rules.length > 0;
+          
+          sourceData.forEach((sourceRow, rowIndex) => {
+            try {
+              if (hasDuplicationRules) {
+                template.mapping_rules.duplication_rules.forEach((dupRule) => {
+                  const transformedRow = {};
+                  
+                  if (template.mapping_rules.column_mappings) {
+                    template.mapping_rules.column_mappings.forEach(mapping => {
+                      if (!mapping.target || mapping.type === 'duplication') {
+                        return;
+                      }
+                      
+                      try {
+                        let rawValue = '';
+                        
+                        if (mapping.type === 'direct_pull' && mapping.value) {
+                          rawValue = sourceRow[mapping.value] || '';
+                        } else if (mapping.type === 'fixed_value') {
+                          rawValue = mapping.value || '';
+                        } else if (mapping.type === 'expression' && mapping.value) {
+                          const rule = template.mapping_rules.transformation_rules?.find(r => r.id === mapping.value);
+                          if (rule && rule.expression) {
+                            rawValue = applyTransformationRule(rule, sourceRow, template);
+                          }
+                        }
+                        
+                        if (mapping.type === 'direct_pull' && mapping.value && template.mapping_rules.source_column_types) {
+                          const sourceColumnType = template.mapping_rules.source_column_types[mapping.value];
+                          if (sourceColumnType && sourceColumnType.dataType) {
+                            transformedRow[mapping.target] = formatValueByDataType(rawValue, sourceColumnType.dataType);
+                          } else {
+                            transformedRow[mapping.target] = rawValue;
+                          }
+                        } else {
+                          transformedRow[mapping.target] = rawValue;
+                        }
+                      } catch (mappingError) {
+                        console.error(`Mapping error for ${mapping.target}:`, mappingError);
+                        throw new Error(`Column "${mapping.target}": ${mappingError.message}`);
+                      }
+                    });
+                  }
+                  
+                  if (dupRule.overrides && dupRule.overrides.length > 0) {
+                    dupRule.overrides.forEach(override => {
+                      if (override.targetColumn) {
+                        try {
+                          let rawValue = '';
+                          
+                          if (override.type === 'fixed_value') {
+                            rawValue = override.value || '';
+                          } else if (override.type === 'source_column' && override.value) {
+                            rawValue = sourceRow[override.value] || '';
+                          } else if (override.type === 'expression' && override.value) {
+                            const rule = template.mapping_rules.transformation_rules?.find(r => r.id === override.value);
+                            if (rule && rule.expression) {
+                              rawValue = applyTransformationRule(rule, sourceRow, template);
+                            }
+                          }
+                          
+                          if (override.type === 'source_column' && override.value && template.mapping_rules.source_column_types) {
+                            const sourceColumnType = template.mapping_rules.source_column_types[override.value];
+                            if (sourceColumnType && sourceColumnType.dataType) {
+                              transformedRow[override.targetColumn] = formatValueByDataType(rawValue, sourceColumnType.dataType);
+                            } else {
+                              transformedRow[override.targetColumn] = rawValue;
+                            }
+                          } else {
+                            transformedRow[override.targetColumn] = rawValue;
+                          }
+                        } catch (overrideError) {
+                          console.error(`Override error for ${override.targetColumn}:`, overrideError);
+                          throw new Error(`Override "${override.targetColumn}": ${overrideError.message}`);
+                        }
+                      }
+                    });
+                  }
+                  
+                  transformedData.push(transformedRow);
+                });
+              } else {
+                const transformedRow = {};
+                
+                if (template.mapping_rules && template.mapping_rules.column_mappings) {
+                  template.mapping_rules.column_mappings.forEach(mapping => {
+                    if (!mapping.target || mapping.type === 'duplication') {
+                      return;
+                    }
+                    
+                    try {
+                      let rawValue = '';
+                      
+                      if (mapping.type === 'direct_pull' && mapping.value) {
+                        rawValue = sourceRow[mapping.value] || '';
+                      } else if (mapping.type === 'fixed_value') {
+                        rawValue = mapping.value || '';
+                      } else if (mapping.type === 'expression' && mapping.value) {
+                        const rule = template.mapping_rules.transformation_rules?.find(r => r.id === mapping.value);
+                        if (rule && rule.expression) {
+                          rawValue = applyTransformationRule(rule, sourceRow, template);
+                        }
+                      }
+                      
+                      if (mapping.type === 'direct_pull' && mapping.value && template.mapping_rules.source_column_types) {
+                        const sourceColumnType = template.mapping_rules.source_column_types[mapping.value];
+                        if (sourceColumnType && sourceColumnType.dataType) {
+                          transformedRow[mapping.target] = formatValueByDataType(rawValue, sourceColumnType.dataType);
+                        } else {
+                          transformedRow[mapping.target] = rawValue;
+                        }
+                      } else {
+                        transformedRow[mapping.target] = rawValue;
+                      }
+                    } catch (mappingError) {
+                      console.error(`Mapping error for ${mapping.target}:`, mappingError);
+                      throw new Error(`Column "${mapping.target}": ${mappingError.message}`);
+                    }
+                  });
+                }
+                
+                transformedData.push(transformedRow);
+              }
+            } catch (error) {
+              console.error(`Row ${rowIndex + 2} error:`, error);
+              errorData.push({
+                rowIndex: rowIndex + 2,
+                error: error.message,
+                sourceData: sourceRow
+              });
+            }
+          });
+          
+          const runIndex = fileRuns.findIndex(r => r.id === runId);
+          if (runIndex !== -1) {
+            fileRuns[runIndex] = {
+              ...fileRuns[runIndex],
+              status: 'completed',
+              rows_processed: sourceData.length,
+              rows_success: transformedData.length,
+              rows_error: errorData.length,
+              completed_at: new Date().toISOString(),
+              output_file: `output_${runId.substring(0, 8)}.csv`,
+              transformed_data: transformedData,
+              error_data: errorData
+            };
+            saveToStorage();
+            render();
+          }
+        } catch (error) {
+          const runIndex = fileRuns.findIndex(r => r.id === runId);
+          if (runIndex !== -1) {
+            fileRuns[runIndex] = {
+              ...fileRuns[runIndex],
+              status: 'failed',
+              completed_at: new Date().toISOString(),
+              error_message: error.message
+            };
+            saveToStorage();
+            render();
+          }
+          showToast('Processing failed: ' + error.message, 'error');
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+
+    function applyTransformationRule(rule, sourceRow, template) {
+      if (!rule.expression) return '';
+      
+      let expression = rule.expression;
+      
+      if (rule.type === 'replace') {
+        const parts = expression.split('|').map(p => p.trim());
+        if (parts.length !== 2) {
+          throw new Error('Replace format must be: find_text | replace_text');
+        }
+        const findText = parts[0];
+        const replaceText = parts[1] === 'empty' ? '' : parts[1];
+        return Object.values(sourceRow).join(' ').replace(new RegExp(findText, 'g'), replaceText);
+      } else if (rule.type === 'calculate') {
+        let calcExpression = expression;
+        
+        Object.keys(sourceRow).forEach(col => {
+          const rawValue = sourceRow[col];
+          const cleanedValue = String(rawValue).replace(/[^0-9.\-]/g, '');
+          const value = parseFloat(cleanedValue);
+          
+          if (isNaN(value) || cleanedValue === '') {
+            calcExpression = calcExpression.replace(new RegExp(`\\{${col}\\}`, 'g'), '0');
+          } else {
+            calcExpression = calcExpression.replace(new RegExp(`\\{${col}\\}`, 'g'), value.toString());
+          }
+        });
+        
+        const result = evaluateMathExpression(calcExpression);
+        
+        if (isNaN(result) || !isFinite(result)) {
+          throw new Error('Calculation resulted in invalid number (NaN or Infinity)');
+        }
+        
+        return result.toFixed(2);
+      } else if (rule.type === 'concatenate') {
+        let result = expression;
+        
+        // Replace column references
+        Object.keys(sourceRow).forEach(col => {
+          result = result.replace(new RegExp(`\\{${col}\\}`, 'g'), sourceRow[col] || '');
+        });
+        
+        // Process the concatenation: split by +, remove quotes, and join
+        const parts = result.split('+').map(part => {
+          return part.trim().replace(/^["']|["']$/g, '');
+        });
+        
+        return parts.join('');
+      } else if (rule.type === 'conditional') {
+        // Parse: IF {Column} > 0 THEN "value1" ELSE "value2"
+        const conditionalPattern = /IF\s+(.+?)\s+THEN\s+(.+?)\s+ELSE\s+(.+)/i;
+        const match = expression.match(conditionalPattern);
+        
+        if (!match) {
+          throw new Error('Invalid conditional format. Use: IF {Column} > 0 THEN "value1" ELSE "value2"');
+        }
+        
+        const condition = match[1].trim();
+        const thenValue = match[2].trim().replace(/["']/g, '');
+        const elseValue = match[3].trim().replace(/["']/g, '');
+        
+        try {
+          const conditionResult = evaluateCondition(condition, sourceRow);
+          return conditionResult ? thenValue : elseValue;
+        } catch (e) {
+          throw new Error(`Condition evaluation error: ${e.message}`);
+        }
+      }
+      
+      return '';
+    }
+
+    function evaluateMathExpression(expr) {
+      expr = expr.replace(/\s/g, '');
+      
+      const tokens = expr.match(/(\d+\.?\d*|[+\-*/()])/g);
+      if (!tokens) return 0;
+      
+      let pos = 0;
+      
+      function parseExpression() {
+        let left = parseTerm();
+        while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+          const op = tokens[pos++];
+          const right = parseTerm();
+          left = op === '+' ? left + right : left - right;
+        }
+        return left;
+      }
+      
+      function parseTerm() {
+        let left = parseFactor();
+        while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+          const op = tokens[pos++];
+          const right = parseFactor();
+          left = op === '*' ? left * right : left / right;
+        }
+        return left;
+      }
+      
+      function parseFactor() {
+        if (tokens[pos] === '(') {
+          pos++;
+          const result = parseExpression();
+          pos++;
+          return result;
+        }
+        
+        if (tokens[pos] === '-') {
+          pos++;
+          return -parseFactor();
+        }
+        
+        if (tokens[pos] === '+') {
+          pos++;
+          return parseFactor();
+        }
+        
+        return parseFloat(tokens[pos++]);
+      }
+      
+      return parseExpression();
+    }
+
+    function evaluateCondition(condition, sourceRow) {
+      // Replace {ColumnName} with actual values
+      let processedCondition = condition;
+      
+      // Extract all column references
+      const columnRefs = condition.match(/\{([^}]+)\}/g);
+      if (!columnRefs) {
+        throw new Error('No column references found in condition');
+      }
+      
+      // Replace each column reference with its value
+      const values = {};
+      columnRefs.forEach(ref => {
+        const colName = ref.slice(1, -1); // Remove { }
+        if (sourceRow.hasOwnProperty(colName)) {
+          const rawValue = sourceRow[colName];
+          const cleanedValue = String(rawValue).replace(/[^0-9.\-]/g, '');
+          const numValue = parseFloat(cleanedValue);
+          
+          // Store both numeric and string representations
+          values[ref] = {
+            numeric: !isNaN(numValue) && cleanedValue !== '' ? numValue : null,
+            string: String(rawValue)
+          };
+        } else {
+          throw new Error(`Column "${colName}" not found in source data`);
+        }
+      });
+      
+      // Parse the condition manually to avoid eval()
+      // Support: >, <, >=, <=, ==, !=
+      const operatorPattern = /(.*?)(>=|<=|==|!=|>|<)(.*)/;
+      const match = processedCondition.match(operatorPattern);
+      
+      if (!match) {
+        throw new Error('Invalid condition format. Supported operators: >, <, >=, <=, ==, !=');
+      }
+      
+      let leftSide = match[1].trim();
+      const operator = match[2];
+      let rightSide = match[3].trim();
+      
+      // Get left value
+      let leftValue;
+      if (leftSide.startsWith('{') && leftSide.endsWith('}')) {
+        const val = values[leftSide];
+        leftValue = val.numeric !== null ? val.numeric : val.string;
+      } else if (leftSide.startsWith('"') || leftSide.startsWith("'")) {
+        leftValue = leftSide.slice(1, -1);
+      } else {
+        const num = parseFloat(leftSide);
+        leftValue = isNaN(num) ? leftSide : num;
+      }
+      
+      // Get right value
+      let rightValue;
+      if (rightSide.startsWith('{') && rightSide.endsWith('}')) {
+        const val = values[rightSide];
+        rightValue = val.numeric !== null ? val.numeric : val.string;
+      } else if (rightSide.startsWith('"') || rightSide.startsWith("'")) {
+        rightValue = rightSide.slice(1, -1);
+      } else {
+        const num = parseFloat(rightSide);
+        rightValue = isNaN(num) ? rightSide : num;
+      }
+      
+      // Perform comparison
+      switch (operator) {
+        case '>':
+          return leftValue > rightValue;
+        case '<':
+          return leftValue < rightValue;
+        case '>=':
+          return leftValue >= rightValue;
+        case '<=':
+          return leftValue <= rightValue;
+        case '==':
+          return leftValue == rightValue;
+        case '!=':
+          return leftValue != rightValue;
+        default:
+          throw new Error(`Unsupported operator: ${operator}`);
+      }
+    }
+
+    function reviewTransformedData(runId) {
+      const run = fileRuns.find(r => r.id === runId);
+      if (!run || run.status !== 'completed') {
+        showToast('Data not available', 'error');
+        return;
+      }
+      
+      currentReviewRun = run;
+      currentView = 'review';
+      render();
+    }
+
+    function downloadOutputFile(runId) {
+      const run = fileRuns.find(r => r.id === runId);
+      if (!run || run.status !== 'completed') {
+        showToast('File not available', 'error');
+        return;
+      }
+      
+      if (!run.transformed_data || run.transformed_data.length === 0) {
+        showToast('No data to download', 'error');
+        return;
+      }
+      
+      try {
+        const headers = Object.keys(run.transformed_data[0]);
+        let csvContent = '';
+        
+        csvContent += headers.map(h => `"${h}"`).join(',') + '\n';
+        
+        run.transformed_data.forEach(row => {
+          csvContent += headers.map(h => {
+            const value = row[h] !== null && row[h] !== undefined ? row[h] : '';
+            const stringValue = String(value);
+            if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+              return `"${stringValue.replace(/"/g, '""')}"`;
+            }
+            return stringValue;
+          }).join(',') + '\n';
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `fyntrac_output_${run.template_name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+        
+        showToast('CSV file downloaded successfully', 'success');
+      } catch (error) {
+        showToast('Download failed: ' + error.message, 'error');
+      }
+    }
+
+    // Review View
+    function renderReviewView() {
+      if (!currentReviewRun) {
+        navigateTo('runs');
+        return;
+      }
+
+      const topBar = document.getElementById('topBar');
+      topBar.innerHTML = `
+        <h1 class="top-bar-title">Review Data - ${currentReviewRun.id.substring(0, 8)}</h1>
+        <div class="top-bar-actions">
+          <button class="btn btn-ghost" onclick="navigateTo('runs')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Runs
+          </button>
+          <button class="btn btn-primary" onclick="downloadOutputFile('${currentReviewRun.id}')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle; margin-right: 4px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Download CSV
+          </button>
+        </div>
+      `;
+
+      const content = document.getElementById('contentWrapper');
+      const data = currentReviewRun.transformed_data || [];
+      const columns = data.length > 0 ? Object.keys(data[0]) : [];
+
+      content.innerHTML = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <p class="stat-label">Total Rows</p>
+            <p class="stat-value">${currentReviewRun.rows_success}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Columns</p>
+            <p class="stat-value">${columns.length}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Errors</p>
+            <p class="stat-value">${currentReviewRun.rows_error}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Template</p>
+            <p class="stat-value" style="font-size: 1.25rem;">${currentReviewRun.template_name}</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Transformed Data (First 50 rows)</h3>
+          </div>
+          ${data.length === 0 ? `
+            <div style="text-align: center; padding: 3rem; color: #64748b;">
+              <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">&#128202;</div>
+              <p>No data available</p>
+            </div>
+          ` : `
+            <div style="overflow-x: auto; max-height: 600px;">
+              <table class="data-table">
+                <thead style="position: sticky; top: 0; background: white; z-index: 1;">
+                  <tr>
+                    <th style="width: 50px;">#</th>
+                    ${columns.map(col => `<th>${col}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.slice(0, 50).map((row, index) => `
+                    <tr>
+                      <td style="font-weight: 600;">${index + 1}</td>
+                      ${columns.map(col => `<td>${row[col] !== null && row[col] !== undefined ? row[col] : '-'}</td>`).join('')}
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // Toast Notification
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background-color: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#5850ec'};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 2000;
+        font-size: 0.875rem;
+        font-weight: 500;
+        max-width: 400px;
+      `;
+      toast.innerHTML = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s, transform 0.3s';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Main Render Function
+    function render() {
+      renderNavigation();
+      
+      if (currentView === 'templates') {
+        renderTemplatesView();
+      } else if (currentView === 'runs') {
+        renderRunsView();
+      } else if (currentView === 'wizard') {
+        renderWizardView();
+      } else if (currentView === 'review') {
+        renderReviewView();
+      }
+    }
+
+    // Initialize
+    function initApp() {
+      loadFromStorage();
+      render();
+      
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput) {
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files.length > 0) {
+            selectedFile = e.target.files[0];
+            document.getElementById('fileNameDisplay').innerHTML = `
+              <div class="file-uploaded">
+                ${selectedFile.name}
+              </div>
+            `;
+          }
+        });
+      }
+    }
+
+    // Start the application
+    document.addEventListener('DOMContentLoaded', initApp);
+    initApp();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9b13304622cf21ec',t:'MTc2NjI3NjE2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
