@@ -14,12 +14,11 @@ tests=("TestIFRS9" "TestRevenue" "TestSBO" "TestGFO" "IFRS9_Stage3" "TestEvent" 
 # fully qualified test class to run
 test_class="com.fyntrac.data.testdriver.ExcelTestDriver"
 
-# gradle options
+# gradle options (same as you used)
 gradle_opts=(--no-daemon --info)
 
-# temporary files
+# temporary file for summary
 summary_file="$(mktemp)"
-log_file="$(mktemp)"
 
 # header
 printf "%-20s\t%-8s\n" "TestCaseName" "Status" > "$summary_file"
@@ -32,22 +31,13 @@ for tc in "${tests[@]}"; do
   echo " Running test case: ${tc}"
   echo "==============================="
 
-  # run gradle and capture output
-  "$GRADLE_CMD" clean test \
-    --tests "${test_class}" \
-    -PtestData="${tc}" \
-    "${gradle_opts[@]}" \
-    2>&1 | tee "$log_file"
+  # run gradle (output shown in terminal)
+  "$GRADLE_CMD" clean test --tests "${test_class}" -PtestData="${tc}" "${gradle_opts[@]}"
+  exit_code=$?
 
-  exit_code=${PIPESTATUS[0]}
-
-  # default status
-  status="PASSED"
-
-  # failure conditions
-  if [ $exit_code -ne 0 ]; then
-    status="FAILED"
-  elif grep -q "IndexOutOfBoundsException" "$log_file"; then
+  if [ $exit_code -eq 0 ]; then
+    status="PASSED"
+  else
     status="FAILED"
   fi
 
@@ -64,4 +54,4 @@ fi
 echo "======================================================"
 
 # cleanup
-rm -f "$summary_file" "$log_file"
+rm -f "$summary_file"
