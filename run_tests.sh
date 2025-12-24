@@ -9,7 +9,7 @@ else
 fi
 
 # your test case names
-tests=("TestIFRS9" "TestRevenue" "TestSBO" "TestGFO" "IFRS9_Stage3" "TestEvent" "TestAsset" "TestSBO_Replay_M1" "TestSBO_Replay_M2")
+tests=("TestIFRS9" "TestRevenue" "TestSBO" "TestGFO" "IFRS9_Stage3" "TestEvent" "TestAsset" "TestSBO_Replay_M1" "TestSBO_Replay_M2" "TestSBO_Replay_Monthly")
 
 # fully qualified test class to run
 test_class="com.fyntrac.data.testdriver.ExcelTestDriver"
