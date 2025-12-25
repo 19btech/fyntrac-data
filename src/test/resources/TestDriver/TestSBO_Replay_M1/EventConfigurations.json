@@ -1,9 +1,9 @@
 [{
   "_id": {
-    "$oid": "694255ba02e0500bad25da4d"
+    "$oid": "694cd678aa7ae064aafc873e"
   },
-  "eventId": "PMT",
-  "eventName": "Payment Event",
+  "eventId": "TRANX",
+  "eventName": "Transaction Event",
   "eventPriority": 1,
   "description": "",
   "triggerSetup": {
@@ -43,11 +43,11 @@
 },
 {
   "_id": {
-    "$oid": "6942562702e0500bad25da4e"
+    "$oid": "694cd6bbaa7ae064aafc873f"
   },
-  "eventId": "INT_ACC",
-  "eventName": "Acrrual Event",
-  "eventPriority": 2,
+  "eventId": "EOD",
+  "eventName": "End of Day Event",
+  "eventPriority": 3,
   "description": "",
   "triggerSetup": {
     "triggerType": "ON_MODEL_EXECUTION",
@@ -76,8 +76,72 @@
       "sourceTable": "Balances",
       "sourceColumns": [
         {
-          "label": "EndingBalance",
-          "value": "EndingBalance"
+          "label": "BeginningBalance",
+          "value": "BeginningBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "UNPAID_PRINCIPAL_BALANCE",
+          "value": "UNPAID_PRINCIPAL_BALANCE"
+        },
+        {
+          "label": "ACCRUED_INTEREST_RECEIVABLE",
+          "value": "ACCRUED_INTEREST_RECEIVABLE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "694cd6f9aa7ae064aafc8740"
+  },
+  "eventId": "REPLAY",
+  "eventName": "Replay Event",
+  "eventPriority": 2,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_REPLAY",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "REMIT",
+        "value": "REMIT"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Transactions",
+      "sourceColumns": [
+        {
+          "label": "Amount",
+          "value": "Amount"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "REMIT",
+          "value": "REMIT"
+        }
+      ],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "BeginningBalance",
+          "value": "BeginningBalance"
         }
       ],
       "versionType": [],
