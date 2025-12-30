@@ -218,8 +218,8 @@
       "sourceTable": "Balances",
       "sourceColumns": [
         {
-          "label": "BeginningBalance",
-          "value": "BeginningBalance"
+          "label": "EndingBalance",
+          "value": "EndingBalance"
         }
       ],
       "versionType": [],
