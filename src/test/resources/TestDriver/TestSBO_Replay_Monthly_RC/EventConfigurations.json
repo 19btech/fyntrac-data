@@ -1,0 +1,202 @@
+[{
+  "_id": {
+    "$oid": "6955604dda109f6549784344"
+  },
+  "eventId": "TRANX",
+  "eventName": "Transaction Event",
+  "eventPriority": 1,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_TRANSACTION_POST",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "REMIT",
+        "value": "REMIT"
+      },
+      {
+        "label": "DRAW",
+        "value": "DRAW"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Transactions",
+      "sourceColumns": [
+        {
+          "label": "Amount",
+          "value": "Amount"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "REMIT",
+          "value": "REMIT"
+        },
+        {
+          "label": "DRAW",
+          "value": "DRAW"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6955608cda109f6549784345"
+  },
+  "eventId": "EOD",
+  "eventName": "End of Day Event",
+  "eventPriority": 3,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "INTEREST_RATE",
+          "value": "INTEREST_RATE"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "BeginningBalance",
+          "value": "BeginningBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "UNPAID_PRINCIPAL_BALANCE",
+          "value": "UNPAID_PRINCIPAL_BALANCE"
+        },
+        {
+          "label": "ACCRUED_INTEREST_RECEIVABLE",
+          "value": "ACCRUED_INTEREST_RECEIVABLE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6955616fda109f6549784346"
+  },
+  "eventId": "REPLAY",
+  "eventName": "Replay Event",
+  "eventPriority": 2,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_REPLAY",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "REMIT",
+        "value": "REMIT"
+      },
+      {
+        "label": "DRAW",
+        "value": "DRAW"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Transactions",
+      "sourceColumns": [
+        {
+          "label": "Amount",
+          "value": "Amount"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "REMIT",
+          "value": "REMIT"
+        },
+        {
+          "label": "DRAW",
+          "value": "DRAW"
+        }
+      ],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "INTEREST_RATE",
+          "value": "INTEREST_RATE"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    },
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "UNPAID_PRINCIPAL_BALANCE",
+          "value": "UNPAID_PRINCIPAL_BALANCE"
+        },
+        {
+          "label": "ACCRUED_INTEREST_RECEIVABLE",
+          "value": "ACCRUED_INTEREST_RECEIVABLE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-12-31T17:47:39.374Z"
+  },
+  "createdBy": "67171f54dcbd9e7e9a527803",
+  "updatedBy": "67171f54dcbd9e7e9a527803",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+}]
