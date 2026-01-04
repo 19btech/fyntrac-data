@@ -73,14 +73,14 @@
     {
       "userField": "USERFIELD6",
       "columnName": "StartDate",
-      "dataType": "STRING",
+      "dataType": "DATE",
       "nullable": true,
       "displayOrder": 5
     },
     {
       "userField": "USERFIELD7",
       "columnName": "ExpectedCF",
-      "dataType": "STRING",
+      "dataType": "NUMBER",
       "nullable": true,
       "displayOrder": 6
     }
