@@ -97,28 +97,52 @@ services:
     networks:
       - fyntrac-network
 
+  gateway:
+    image: ghcr.io/19btech/fyntrac/docker/fyntrac-gateway:${GATEWAY_VERSION:-0.0.3-SNAPSHOT}
+    container_name: fyntrac-gateway
+    ports:
+      - "8585:8585"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DATALOADER_SERVICE_URI: http://dataloader:8081
+      REPORTING_SERVICE_URI: http://reporting:8084
+      CORS_ALLOWED_ORIGINS: http://localhost:3030,http://web:3030
+      ZITADEL_CLIENT_ID: ${ZITADEL_CLIENT_ID}
+      ZITADEL_CLIENT_SECRET: ${ZITADEL_CLIENT_SECRET}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8585/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      dataloader:
+        condition: service_healthy
+      reporting:
+        condition: service_healthy
+    cpus: '0.5'
+    mem_limit: 512M
+    restart: unless-stopped
+    networks:
+      - fyntrac-network
+
   web:
     image: ghcr.io/19btech/fyntrac/docker/web:latest
     container_name: fyntrac-web
     ports:
       - "3030:3030"
-    # No entrypoint: Assumes image default (e.g., npm start for Node.js web app)
-    # environment:  # Omitted if no vars needed; uncomment and add below if required
-    #   REACT_APP_API_URL: http://reporting:8084  # Example: Points to reporting service (use service name for internal access)
-    #   REACT_APP_PULSAR_URL: pulsar://pulsar:6650  # If web needs Pulsar
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]  # Assumes /health endpoint; adjust to / or port check if none
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s  # Web apps boot faster
+      start_period: 30s
     environment:
-      NEXT_PUBLIC_SUBLEDGER_SERVICE_URI: http://72.60.172.224:8081/api/dataloader
-      NEXT_PUBLIC_REPORTING_SERVICE_URI: http://72.60.172.224:8084/api/reporting
+      NEXT_PUBLIC_GATEWAY_URI: http://gateway:8585
       NEXT_PUBLIC_TENANT: Test
     depends_on:
-      reporting:
-        condition: service_healthy  # Waits for reporting to be healthy
+      gateway:
+        condition: service_healthy  # Waits for gateway to be healthy
     restart: unless-stopped
     networks:
       - fyntrac-network

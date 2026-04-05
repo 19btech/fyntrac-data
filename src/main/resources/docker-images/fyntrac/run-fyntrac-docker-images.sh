@@ -2,6 +2,11 @@
 
 set -e
 
+# Source developer profile for OAuth2 secrets so docker-compose can pass them to gateway
+if [ -f ~/.dev_profile ]; then
+  source ~/.dev_profile
+fi
+
 COMPOSE_FILE="fyntrac-docker-compose.yml"
 NETWORK_NAME="fyntrac-network"
 RED='\033[0;31m'
@@ -39,6 +44,7 @@ declare -A container_map=(
   ["model"]="fyntrac-model"
   ["gl"]="fyntrac-gl"
   ["reporting"]="fyntrac-reporting"
+  ["gateway"]="fyntrac-gateway"
   ["web"]="fyntrac-web"
 )
 
@@ -47,7 +53,8 @@ declare -A image_map=(
   ["model"]="ghcr.io/19btech/fyntrac/docker/model:${VERSION}"
   ["gl"]="ghcr.io/19btech/fyntrac/docker/gl:${VERSION}"
   ["reporting"]="ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}"
-  ["web"]="ghcr.io/19btech/fyntrac/docker/web:latest"
+  ["gateway"]="ghcr.io/19btech/fyntrac/docker/fyntrac-gateway:${VERSION}"
+  ["web"]="ghcr.io/19btech/fyntrac/docker/web:${VERSION}"
 )
 
 # Determine components to deploy
