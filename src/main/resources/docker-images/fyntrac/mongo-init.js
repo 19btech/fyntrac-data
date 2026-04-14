@@ -124,11 +124,11 @@ db.users.updateOne(
     { _id: ObjectId("67171f54dcbd9e7e9a527801") },
     {
         $set: {
-            username: "merchantAdmin",
-            email: "admin@fyntrac.com",
+            username: "rahmed",
+            email: "rahmed@19btech.com",
             passwordHash: "hashed-password-1",
-            firstName: "Ali",
-            lastName: "Raza",
+            firstName: "Rafay",
+            lastName: "Ahmed",
             phoneNumber: "+92-300-9876543",
             tenantIds: [ ObjectId("67171f54dcbd9e7e9a52768f") ],
             merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
@@ -149,11 +149,11 @@ db.users.updateOne(
     { _id: ObjectId("67171f54dcbd9e7e9a527802") },
     {
         $set: {
-            username: "tenantManager",
-            email: "manager@fyntrac.com",
+            username: "uabbas",
+            email: "uabbas@19btech.com",
             passwordHash: "hashed-password-2",
-            firstName: "Sara",
-            lastName: "Khan",
+            firstName: "Urooj",
+            lastName: "Abbas",
             phoneNumber: "+971-55-1234567",
             tenantIds: [
                 ObjectId("67171f54dcbd9e7e9a52768f"),
@@ -177,11 +177,11 @@ db.users.updateOne(
     { _id: ObjectId("67171f54dcbd9e7e9a527803") },
     {
         $set: {
-            username: "auditor",
-            email: "auditor@fyntrac.com",
+            username: "ajaffar",
+            email: "ajaffar@19btech.com",
             passwordHash: "hashed-password-3",
-            firstName: "Bilal",
-            lastName: "Ahmed",
+            firstName: "Ali",
+            lastName: "Jaffar",
             phoneNumber: "+92-333-8889999",
             tenantIds: [
                 ObjectId("67171f8adcbd9e7e9a527690"),

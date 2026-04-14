@@ -109,6 +109,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3030,http://web:3030
       ZITADEL_CLIENT_ID: ${ZITADEL_CLIENT_ID}
       ZITADEL_CLIENT_SECRET: ${ZITADEL_CLIENT_SECRET}
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8585/actuator/health"]
       interval: 30s
