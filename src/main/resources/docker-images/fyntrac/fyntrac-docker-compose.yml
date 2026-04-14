@@ -110,6 +110,7 @@ services:
       ZITADEL_CLIENT_ID: ${ZITADEL_CLIENT_ID}
       ZITADEL_CLIENT_SECRET: ${ZITADEL_CLIENT_SECRET}
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
+      ZITADEL_PROJECT_ID: ${ZITADEL_PROJECT_ID}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8585/actuator/health"]
       interval: 30s
