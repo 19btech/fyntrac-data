@@ -11,7 +11,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${ZITADEL_ISSUER_URI}
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
       # Add Memcached: SPRING_CACHE_TYPE=simple (or caffeine/redis if using Memcached)
     healthcheck:
@@ -36,6 +36,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]  # Assumes Spring Actuator
@@ -60,6 +61,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]  # Assumes Spring Actuator
@@ -83,6 +85,7 @@ services:
     entrypoint: ["java", "-cp", "/app/resources:/app/classes:/app/libs/*", "com.fyntrac.reporting.ReportingApplication"]
     environment:
       SPRING_PROFILES_ACTIVE: test
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       # Add Pulsar if needed: SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
       # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
     healthcheck:
