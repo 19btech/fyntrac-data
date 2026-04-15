@@ -11,6 +11,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       # Add DB/MongoDB if needed: SPRING_DATA_MONGODB_URI=mongodb://root:R3s3rv%23313@mongodb:27017/master
       # Add Memcached: SPRING_CACHE_TYPE=simple (or caffeine/redis if using Memcached)
     healthcheck:
