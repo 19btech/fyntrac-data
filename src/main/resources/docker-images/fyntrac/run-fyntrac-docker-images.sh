@@ -42,6 +42,7 @@ log_info "Using version: $VERSION"
 declare -A container_map=(
   ["dataloader"]="fyntrac-dataloader"
   ["model"]="fyntrac-model"
+  ["dsl-model"]="fyntrac-dsl-model"
   ["gl"]="fyntrac-gl"
   ["reporting"]="fyntrac-reporting"
   ["gateway"]="fyntrac-gateway"
@@ -51,6 +52,7 @@ declare -A container_map=(
 declare -A image_map=(
   ["dataloader"]="ghcr.io/19btech/fyntrac/docker/dataloader:${VERSION}"
   ["model"]="ghcr.io/19btech/fyntrac/docker/model:${VERSION}"
+  ["dsl-model"]="ghcr.io/19btech/fyntrac/docker/fyntrac-dsl-model:${VERSION}"
   ["gl"]="ghcr.io/19btech/fyntrac/docker/gl:${VERSION}"
   ["reporting"]="ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}"
   ["gateway"]="ghcr.io/19btech/fyntrac/docker/fyntrac-gateway:${VERSION}"

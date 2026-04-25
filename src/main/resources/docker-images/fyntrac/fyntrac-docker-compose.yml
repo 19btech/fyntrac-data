@@ -51,6 +51,36 @@ services:
     networks:
       - fyntrac-network
 
+  dsl-model:
+    image: ghcr.io/19btech/fyntrac/docker/fyntrac-dsl-model:0.0.3-SNAPSHOT
+    container_name: fyntrac-dsl-model
+    ports:
+      - "8090:8090"
+    environment:
+      # MongoDB
+      MONGODB_HOST: ${MONGODB_HOST:-mongodb}
+      MONGODB_PORT: ${MONGODB_PORT:-27017}
+      MONGODB_USERNAME: ${MONGODB_USERNAME:-root}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD:-R3s3rv#313}
+      MONGODB_AUTH_DATABASE: ${MONGODB_AUTH_DATABASE:-admin}
+      MONGODB_DEFAULT_DATABASE: ${MONGODB_DEFAULT_DATABASE:-master}
+      # ZITADEL
+      ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
+      ZITADEL_PROJECT_ID: ${ZITADEL_PROJECT_ID}
+      # CORS
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3030}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - fyntrac-network
+
   gl:
     image: ghcr.io/19btech/fyntrac/docker/gl:0.0.3-SNAPSHOT
     container_name: fyntrac-gl
