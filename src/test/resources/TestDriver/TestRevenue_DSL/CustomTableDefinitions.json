@@ -1,0 +1,57 @@
+[{
+  "_id": {
+    "$oid": "6940e05f02e0500bad25a674"
+  },
+  "tableName": "CATALOG",
+  "description": "Product Catalog",
+  "tableType": "REFERENCE",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "ProductId",
+      "dataType": "NUMBER",
+      "nullable": true,
+      "displayOrder": 0
+    },
+    {
+      "userField": "USERFIELD2",
+      "columnName": "ProductName",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 1
+    },
+    {
+      "userField": "USERFIELD3",
+      "columnName": "SSP",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 2
+    },
+    {
+      "userField": "USERFIELD4",
+      "columnName": "RevRec_Method",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 3
+    },
+    {
+      "userField": "USERFIELD5",
+      "columnName": "Amount",
+      "dataType": "NUMBER",
+      "nullable": true,
+      "displayOrder": 4
+    }
+  ],
+  "primaryKeys": [
+    "ProductId"
+  ],
+  "referenceColumn": "ProductId",
+  "referenceTable": "",
+  "createdAt": {
+    "$date": "2025-12-16T04:30:23.029Z"
+  },
+  "updatedAt": {
+    "$date": "2025-12-16T04:30:23.029Z"
+  },
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+}]

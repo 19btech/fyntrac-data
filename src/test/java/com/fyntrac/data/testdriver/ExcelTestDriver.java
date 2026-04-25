@@ -36,10 +36,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static org.springframework.test.util.AssertionErrors.assertNotNull;
 
@@ -171,10 +168,25 @@ public class ExcelTestDriver {
                 model.getModelConfig().setCurrentVersion(Boolean.TRUE);
                 model.setModelStatus(ModelStatus.ACTIVE);
                 configureModel(model);
-            } else if (testStep == TestStep.MODEL_EXECUTION) {
+            }  else if (testStep == TestStep.DSL_MODEL_UPLOAD) {
+                model = uploadDslModel(step.input());
+            }else if (testStep == TestStep.MODEL_EXECUTION) {
                 //Model execution
                 String executionDate = step.input();
                 executeModel(executionDate);
+
+                // Add 10-second delay
+                try {
+                    Thread.sleep(30_000); // 10,000 milliseconds = 10 seconds
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore interrupt status
+                    throw new RuntimeException("Thread was interrupted during sleep", e);
+                }
+            }
+            else if (testStep == TestStep.DSL_MODEL_EXECUTION) {
+                //Model execution
+                String executionDate = step.input();
+                executeDslModel(executionDate);
 
                 // Add 10-second delay
                 try {
@@ -361,6 +373,59 @@ public class ExcelTestDriver {
         }
     }
 
+    Model uploadDslModel(String modelFile) throws Exception {
+        String uri = String.format("%s/%s", dataLoaderURI, "model/upload-py-model");
+
+        InputStream fileStream = this.readFile(modelFile);
+
+        // Prepare file content
+        byte[] content = ExcelTestDriver.toByteArray(fileStream);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.set("X-Tenant", tenantId);
+
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        // Anonymous class to ensure filename is passed, otherwise Spring uploads as 'unknown'
+        body.add("dslModel", new ByteArrayResource(content) {
+            @Override
+            public String getFilename() {
+                return String.format("%s.%s", modelFile, "txt");
+            }
+        });
+        body.add("modelName", "TestModel");
+        body.add("modelOrderId", "1");
+
+        HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
+
+        // 1. Request as String.class to safely capture both JSON (Success) and Plain Text (Error)
+        ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
+
+        // 2. Handle Failure
+        if (response.getStatusCode() != HttpStatus.OK) {
+            // Fail the test with the clear error message from the server
+            Assertions.fail("Fail to load Model. Status: " + response.getStatusCode() + ", Body: " + response.getBody());
+            // This throw is technically unreachable due to Assertions.fail, but good for compiler logic
+            throw new RuntimeException("Upload failed: " + response.getBody());
+        }
+
+        // 3. Handle Success: Manually deserialize the JSON string to Model
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ObjectMapper mapper = new ObjectMapper();
+        // Good practice for tests: don't fail if the API adds new fields later
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // Register time module if your Model uses Java 8 dates (LocalDate, etc.)
+        mapper.registerModule(new JavaTimeModule());
+
+        try {
+            return mapper.readValue(response.getBody(), Model.class);
+        } catch (Exception e) {
+            Assertions.fail("Response was 200 OK, but failed to parse JSON into Model: " + e.getMessage());
+            return null;
+        }
+    }
+
+
     Model configureModel(Model model) throws Exception {
         String uri = String.format("%s/%s", dataLoaderURI, "model/configure" );
 
@@ -378,6 +443,23 @@ public class ExcelTestDriver {
 
     void executeModel(String executionDate) throws Throwable {
         String uri = String.format("%s/%s", dataLoaderURI, "model/execute" );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-Tenant", tenantId); // if needed
+
+        Date accountingPeriodDate = com.fyntrac.common.utils.DateUtil.parseDate(executionDate, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String strDate = com.fyntrac.common.utils.DateUtil.format(accountingPeriodDate, "MM/dd/yyyy");
+        Records.DateRequestRecord dateRequestRecord = RecordFactory.createDateRequest(strDate);
+        HttpEntity<Records.DateRequestRecord> requestEntity = new HttpEntity<>(dateRequestRecord, headers);
+        ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
+
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+        // Optionally assert response body
+    }
+
+    void executeDslModel(String executionDate) throws Throwable {
+        String uri = String.format("%s/%s", dataLoaderURI, "model/execute/dsl" );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
