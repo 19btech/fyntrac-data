@@ -427,19 +427,6 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         set_current_context(instrumentid, postingdate, effectivedate, subinstrumentid)
         
         # Extract fields from all events with proper datatype conversion
-        # Fields from TRANX (activity)
-        TRANX_postingdate = str(get_field_case_insensitive(row, 'TRANX_postingdate', ''))
-        TRANX_effectivedate = str(get_field_case_insensitive(row, 'TRANX_effectivedate', ''))
-        TRANX_subinstrumentid = str(get_field_case_insensitive(row, 'TRANX_subinstrumentid', '1'))
-        TRANX_TRANSACTIONS_AMOUNT_REMIT = float(get_field_case_insensitive(row, 'TRANX_TRANSACTIONS_AMOUNT_REMIT', 0) or 0)
-        # Fields from REPLAY (activity)
-        REPLAY_postingdate = str(get_field_case_insensitive(row, 'REPLAY_postingdate', ''))
-        REPLAY_effectivedate = str(get_field_case_insensitive(row, 'REPLAY_effectivedate', ''))
-        REPLAY_subinstrumentid = str(get_field_case_insensitive(row, 'REPLAY_subinstrumentid', '1'))
-        REPLAY_TRANSACTIONS_AMOUNT_REMIT = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_REMIT', 0) or 0)
-        REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB', 0) or 0)
-        REPLAY_ATTRIBUTE_MERCHANT_INDUSTRY_CURRENT = str(get_field_case_insensitive(row, 'REPLAY_ATTRIBUTE_MERCHANT_INDUSTRY_CURRENT', ''))
-        REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL', 0) or 0)
         # Fields from EOD (activity)
         EOD_postingdate = str(get_field_case_insensitive(row, 'EOD_postingdate', ''))
         EOD_effectivedate = str(get_field_case_insensitive(row, 'EOD_effectivedate', ''))
@@ -454,39 +441,55 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         EOD_BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL = float(get_field_case_insensitive(row, 'EOD_BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL', 0) or 0)
         EOD_BALANCES_ACTIVITY_ACCRUED_INTEREST_RECEIVABLE = float(get_field_case_insensitive(row, 'EOD_BALANCES_ACTIVITY_ACCRUED_INTEREST_RECEIVABLE', 0) or 0)
         EOD_ATTRIBUTE_INTEREST_RATE_CURRENT = float(get_field_case_insensitive(row, 'EOD_ATTRIBUTE_INTEREST_RATE_CURRENT', 0) or 0)
+        # Fields from REPLAY (activity)
+        REPLAY_postingdate = str(get_field_case_insensitive(row, 'REPLAY_postingdate', ''))
+        REPLAY_effectivedate = str(get_field_case_insensitive(row, 'REPLAY_effectivedate', ''))
+        REPLAY_subinstrumentid = str(get_field_case_insensitive(row, 'REPLAY_subinstrumentid', '1'))
+        REPLAY_TRANSACTIONS_AMOUNT_REMIT = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_REMIT', 0) or 0)
+        REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB', 0) or 0)
+        REPLAY_ATTRIBUTE_MERCHANT_INDUSTRY_CURRENT = str(get_field_case_insensitive(row, 'REPLAY_ATTRIBUTE_MERCHANT_INDUSTRY_CURRENT', ''))
+        REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL = float(get_field_case_insensitive(row, 'REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL', 0) or 0)
+        # Fields from TRANX (activity)
+        TRANX_postingdate = str(get_field_case_insensitive(row, 'TRANX_postingdate', ''))
+        TRANX_effectivedate = str(get_field_case_insensitive(row, 'TRANX_effectivedate', ''))
+        TRANX_subinstrumentid = str(get_field_case_insensitive(row, 'TRANX_subinstrumentid', '1'))
+        TRANX_TRANSACTIONS_AMOUNT_REMIT = float(get_field_case_insensitive(row, 'TRANX_TRANSACTIONS_AMOUNT_REMIT', 0) or 0)
         
         # Execute DSL logic - transactions are created via createTransaction()
         ## ═══════════════════════════════════════════════════════════════
         ## STEP 1 - PARAMETERS
         ## ═══════════════════════════════════════════════════════════════
 
+        ## Dependencies from saved rules
         ## Steps
-        replay_remit = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_REMIT')  # DSL_LINE:6
-        print("replay_remit =", replay_remit)  # DSL_LINE:7
-        posting_date = EOD_postingdate  # DSL_LINE:8
-        print("posting_date =", posting_date)  # DSL_LINE:9
-        Current_Acc_Bal = EOD_BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL  # DSL_LINE:10
-        print("Current_Acc_Bal =", Current_Acc_Bal)  # DSL_LINE:11
-        Current_UPB_Bal = EOD_BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE  # DSL_LINE:12
-        print("Current_UPB_Bal =", Current_UPB_Bal)  # DSL_LINE:13
-        replay_date = REPLAY_effectivedate  # DSL_LINE:14
-        print("replay_date =", replay_date)  # DSL_LINE:15
-        payment_date = TRANX_effectivedate  # DSL_LINE:16
-        print("payment_date =", payment_date)  # DSL_LINE:17
-        payment_amount = iif(eq(payment_date,posting_date),TRANX_TRANSACTIONS_AMOUNT_REMIT,0)  # DSL_LINE:18
-        print("payment_amount =", payment_amount)  # DSL_LINE:19
-        effective_date = EOD_effectivedate  # DSL_LINE:20
-        print("effective_date =", effective_date)  # DSL_LINE:21
-        subinstrumentid = EOD_subinstrumentid  # DSL_LINE:22
-        print("subinstrumentid =", subinstrumentid)  # DSL_LINE:23
-        interest_rate = EOD_ATTRIBUTE_INTEREST_RATE_CURRENT/100  # DSL_LINE:24
-        print("interest_rate =", interest_rate)  # DSL_LINE:25
-        timeline_list = array_append(collect_by_instrument('REPLAY_effectivedate'),posting_date)  # DSL_LINE:26
-        print("timeline_list =", timeline_list)  # DSL_LINE:27
-        REPLAY_REP_RAYMENTUPB_arr = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB')  # DSL_LINE:28
-        print("REPLAY_REP_RAYMENTUPB_arr =", REPLAY_REP_RAYMENTUPB_arr)  # DSL_LINE:29
-        REPLAY_REP_SIA_arr = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL')  # DSL_LINE:30
-        print("REPLAY_REP_SIA_arr =", REPLAY_REP_SIA_arr)  # DSL_LINE:31
+        replay_remit = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_REMIT')  # DSL_LINE:7
+        print("replay_remit =", replay_remit)  # DSL_LINE:8
+        posting_date = EOD_postingdate  # DSL_LINE:9
+        print("posting_date =", posting_date)  # DSL_LINE:10
+        Current_Acc_Bal = EOD_BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL  # DSL_LINE:11
+        print("Current_Acc_Bal =", Current_Acc_Bal)  # DSL_LINE:12
+        Current_UPB_Bal = EOD_BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE  # DSL_LINE:13
+        print("Current_UPB_Bal =", Current_UPB_Bal)  # DSL_LINE:14
+        replay_date = REPLAY_effectivedate  # DSL_LINE:15
+        print("replay_date =", replay_date)  # DSL_LINE:16
+        payment_date = TRANX_effectivedate  # DSL_LINE:17
+        print("payment_date =", payment_date)  # DSL_LINE:18
+        payment_amount = iif(eq(payment_date,posting_date),TRANX_TRANSACTIONS_AMOUNT_REMIT,0)  # DSL_LINE:19
+        print("payment_amount =", payment_amount)  # DSL_LINE:20
+        effective_date = EOD_effectivedate  # DSL_LINE:21
+        print("effective_date =", effective_date)  # DSL_LINE:22
+        subinstrumentid = EOD_subinstrumentid  # DSL_LINE:23
+        print("subinstrumentid =", subinstrumentid)  # DSL_LINE:24
+        interest_rate = EOD_ATTRIBUTE_INTEREST_RATE_CURRENT/100  # DSL_LINE:25
+        print("interest_rate =", interest_rate)  # DSL_LINE:26
+        timeline_list = array_append(collect_by_instrument('REPLAY_effectivedate'),posting_date)  # DSL_LINE:27
+        print("timeline_list =", timeline_list)  # DSL_LINE:28
+        REPLAY_REP_RAYMENTUPB_arr = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_PAYMENT_UPB')  # DSL_LINE:29
+        print("REPLAY_REP_RAYMENTUPB_arr =", REPLAY_REP_RAYMENTUPB_arr)  # DSL_LINE:30
+        REPLAY_REP_SIA_arr = collect_by_instrument('REPLAY_TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL')  # DSL_LINE:31
+        print("REPLAY_REP_SIA_arr =", REPLAY_REP_SIA_arr)  # DSL_LINE:32
+        remit = TRANX_TRANSACTIONS_AMOUNT_REMIT  # DSL_LINE:33
+        print("remit =", remit)  # DSL_LINE:34
 
         ## ═══════════════════════════════════════════════════════════════
         ## STEP 2 - SCHEDULE
@@ -494,40 +497,40 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
 
         ## Dependencies from saved rules
         ## Steps
-        timelinelist_count = count(timeline_list)  # DSL_LINE:39
-        print("timelinelist_count =", timelinelist_count)  # DSL_LINE:40
+        timelinelist_count = count(timeline_list)  # DSL_LINE:42
+        print("timelinelist_count =", timelinelist_count)  # DSL_LINE:43
         ## Schedule
-        p = period(timelinelist_count, "M")  # DSL_LINE:42
-        BACKTRACK_SCHEDULE = schedule(p, {  # DSL_LINE:43
-        "date": "timeline_list",  # DSL_LINE:44
-        "Accrual_Days": "days_between(lag('date',1,0),date)",  # DSL_LINE:45
-        "Accrual_Amount": "REPLAY_REP_SIA_arr",  # DSL_LINE:46
-        "days_accrual": "multiply(Accrual_Days,lag('Accrual_Amount',1,0))"  # DSL_LINE:47
-        }, {"timeline_list": timeline_list, "REPLAY_REP_SIA_arr": REPLAY_REP_SIA_arr})  # DSL_LINE:48
-        print(BACKTRACK_SCHEDULE)  # DSL_LINE:49
-        days_accrual = schedule_sum(BACKTRACK_SCHEDULE, "days_accrual")  # DSL_LINE:50
+        p = period(timelinelist_count, "M")  # DSL_LINE:45
+        BACKTRACK_SCHEDULE = schedule(p, {  # DSL_LINE:46
+        "date": "timeline_list",  # DSL_LINE:47
+        "Accrual_Days": "days_between(lag('date',1,0),date)",  # DSL_LINE:48
+        "Accrual_Amount": "REPLAY_REP_SIA_arr",  # DSL_LINE:49
+        "days_accrual": "multiply(Accrual_Days,lag('Accrual_Amount',1,0))"  # DSL_LINE:50
+        }, {"timeline_list": timeline_list, "REPLAY_REP_SIA_arr": REPLAY_REP_SIA_arr})  # DSL_LINE:51
+        print(BACKTRACK_SCHEDULE)  # DSL_LINE:52
+        days_accrual = schedule_sum(BACKTRACK_SCHEDULE, "days_accrual")  # DSL_LINE:53
 
-        replay_air = subtract(Current_Acc_Bal,days_accrual)  # DSL_LINE:52
-        print("replay_air =", replay_air)  # DSL_LINE:53
-        replay_upb = subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))  # DSL_LINE:54
-        print("replay_upb =", replay_upb)  # DSL_LINE:55
+        replay_air = subtract(Current_Acc_Bal,days_accrual)  # DSL_LINE:55
+        print("replay_air =", replay_air)  # DSL_LINE:56
+        replay_upb = subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))  # DSL_LINE:57
+        print("replay_upb =", replay_upb)  # DSL_LINE:58
         ## Schedule
-        p = period(timelinelist_count, "M")  # DSL_LINE:57
-        Schedule = schedule(p, {  # DSL_LINE:58
-        "date": "timeline_list",  # DSL_LINE:59
-        "days": "iif(eq(period_index, 0),0,days_between(lag('date',1,0),date)-1)",  # DSL_LINE:60
-        "Beg_UPB": "iif(eq(period_index, 0), replay_upb, lag('End_UPB',1,0))",  # DSL_LINE:61
-        "Beg_AIR": "iif(eq(period_index, 0),replay_air,lag('End_AIR',1,0)+(lag('Accrual',1,0)*days))",  # DSL_LINE:62
-        "Remit_am": "coalesce(replay_remit,0)",  # DSL_LINE:63
-        "Int_Paid": "min(Remit_am,Beg_AIR)",  # DSL_LINE:64
-        "Prin_Paid": "max(Remit_am-Int_Paid,0)",  # DSL_LINE:65
-        "End_UPB": "subtract(Beg_UPB,Prin_Paid)",  # DSL_LINE:66
-        "Accrual": "(interest_rate*End_UPB)/360",  # DSL_LINE:67
-        "End_AIR": "Beg_AIR-Int_Paid+Accrual"  # DSL_LINE:68
-        }, {"timeline_list": timeline_list, "replay_upb": replay_upb, "replay_air": replay_air, "replay_remit": replay_remit, "interest_rate": interest_rate})  # DSL_LINE:69
-        print(Schedule)  # DSL_LINE:70
-        Replay_EndingUPB = schedule_last(Schedule, "End_UPB")  # DSL_LINE:71
-        Replay_EndingAIR = schedule_last(Schedule, "End_AIR")  # DSL_LINE:72
+        p = period(timelinelist_count, "M")  # DSL_LINE:60
+        Schedule = schedule(p, {  # DSL_LINE:61
+        "date": "timeline_list",  # DSL_LINE:62
+        "days": "iif(eq(period_index, 0),0,days_between(lag('date',1,0),date)-1)",  # DSL_LINE:63
+        "Beg_UPB": "iif(eq(period_index, 0), replay_upb, lag('End_UPB',1,0))",  # DSL_LINE:64
+        "Beg_AIR": "iif(eq(period_index, 0),replay_air,lag('End_AIR',1,0)+(lag('Accrual',1,0)*days))",  # DSL_LINE:65
+        "Remit_am": "coalesce(replay_remit,0)",  # DSL_LINE:66
+        "Int_Paid": "min(Remit_am,Beg_AIR)",  # DSL_LINE:67
+        "Prin_Paid": "max(Remit_am-Int_Paid,0)",  # DSL_LINE:68
+        "End_UPB": "subtract(Beg_UPB,Prin_Paid)",  # DSL_LINE:69
+        "Accrual": "(interest_rate*End_UPB)/360",  # DSL_LINE:70
+        "End_AIR": "Beg_AIR-Int_Paid+Accrual"  # DSL_LINE:71
+        }, {"timeline_list": timeline_list, "replay_upb": replay_upb, "replay_air": replay_air, "replay_remit": replay_remit, "interest_rate": interest_rate})  # DSL_LINE:72
+        print(Schedule)  # DSL_LINE:73
+        Replay_EndingUPB = schedule_last(Schedule, "End_UPB")  # DSL_LINE:74
+        Replay_EndingAIR = schedule_last(Schedule, "End_AIR")  # DSL_LINE:75
 
 
         ## ═══════════════════════════════════════════════════════════════
@@ -536,35 +539,39 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
 
         ## Dependencies from saved rules
         ## Steps
-        BeginningUPB = EOD_BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE  # DSL_LINE:81
-        print("BeginningUPB =", BeginningUPB)  # DSL_LINE:82
-        BeginningAIR = EOD_BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE  # DSL_LINE:83
-        print("BeginningAIR =", BeginningAIR)  # DSL_LINE:84
-        Payment_interest = min(payment_amount, BeginningAIR)*-1  # DSL_LINE:85
-        print("Payment_interest =", Payment_interest)  # DSL_LINE:86
-        payment_principal = max(payment_amount+Payment_interest, 0)*-1  # DSL_LINE:87
-        print("payment_principal =", payment_principal)  # DSL_LINE:88
-        InterestAccrual = ((BeginningUPB+payment_principal)*interest_rate)/360  # DSL_LINE:89
-        print("InterestAccrual =", InterestAccrual)  # DSL_LINE:90
-        EndingUPB = BeginningUPB+payment_principal  # DSL_LINE:91
-        print("EndingUPB =", EndingUPB)  # DSL_LINE:92
-        EndingAIR = BeginningAIR+Payment_interest+InterestAccrual  # DSL_LINE:93
-        print("EndingAIR =", EndingAIR)  # DSL_LINE:94
+        BeginningUPB = EOD_BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE  # DSL_LINE:84
+        print("BeginningUPB =", BeginningUPB)  # DSL_LINE:85
+        BeginningAIR = EOD_BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE  # DSL_LINE:86
+        print("BeginningAIR =", BeginningAIR)  # DSL_LINE:87
+        Payment_interest = min(payment_amount, BeginningAIR)*-1  # DSL_LINE:88
+        print("Payment_interest =", Payment_interest)  # DSL_LINE:89
+        payment_principal = max(payment_amount+Payment_interest, 0)*-1  # DSL_LINE:90
+        print("payment_principal =", payment_principal)  # DSL_LINE:91
+        InterestAccrual = ((BeginningUPB+payment_principal)*interest_rate)/360  # DSL_LINE:92
+        print("InterestAccrual =", InterestAccrual)  # DSL_LINE:93
+        EndingUPB = BeginningUPB+payment_principal  # DSL_LINE:94
+        print("EndingUPB =", EndingUPB)  # DSL_LINE:95
+        EndingAIR = BeginningAIR+Payment_interest+InterestAccrual  # DSL_LINE:96
+        print("EndingAIR =", EndingAIR)  # DSL_LINE:97
+        Replay_AIR_Final = iif(is_null(replay_date),EndingAIR,Replay_EndingAIR)  # DSL_LINE:98
+        print("Replay_AIR_Final =", Replay_AIR_Final)  # DSL_LINE:99
+        Replay_UPB_final = iif(is_null(replay_date),EndingUPB,Replay_EndingUPB)  # DSL_LINE:100
+        print("Replay_UPB_final =", Replay_UPB_final)  # DSL_LINE:101
         ## Conditional Logic
-        Principal_Adj = iif(eq(Replay_EndingUPB,0), 0, subtract(Replay_EndingUPB,EndingUPB))  # DSL_LINE:96
-        print("Principal_Adj =", Principal_Adj)  # DSL_LINE:97
+        Principal_Adj = iif(eq(Replay_EndingUPB,0), 0, subtract(Replay_UPB_final,EndingUPB))  # DSL_LINE:103
+        print("Principal_Adj =", Principal_Adj)  # DSL_LINE:104
 
         ## Conditional Logic
-        Interest_Adj = iif(eq(Replay_EndingAIR,0), 0, subtract(Replay_EndingAIR,EndingAIR))  # DSL_LINE:100
-        print("Interest_Adj =", Interest_Adj)  # DSL_LINE:101
+        Interest_Adj = iif(eq(Replay_EndingAIR,0), 0, subtract(Replay_AIR_Final,EndingAIR))  # DSL_LINE:107
+        print("Interest_Adj =", Interest_Adj)  # DSL_LINE:108
 
 
         ## Create Transactions
-        createTransaction(posting_date, posting_date, "Principal_Adjustment", Principal_Adj, subinstrumentid)  # DSL_LINE:105
-        createTransaction(posting_date, posting_date, "Interest_Adjustment", Interest_Adj, subinstrumentid)  # DSL_LINE:106
-        createTransaction(posting_date, payment_date, "Payment_UPB", payment_principal, subinstrumentid)  # DSL_LINE:107
-        createTransaction(posting_date, payment_date, "Payment_Interest", Payment_interest, subinstrumentid)  # DSL_LINE:108
-        createTransaction(posting_date, posting_date, "Servicing_Interest_Accrual", InterestAccrual, subinstrumentid)  # DSL_LINE:109
+        createTransaction(posting_date, posting_date, "Principal_Adjustment", Principal_Adj, subinstrumentid)  # DSL_LINE:112
+        createTransaction(posting_date, posting_date, "Interest_Adjustment", Interest_Adj, subinstrumentid)  # DSL_LINE:113
+        createTransaction(posting_date, payment_date, "Payment_UPB", payment_principal, subinstrumentid)  # DSL_LINE:114
+        createTransaction(posting_date, payment_date, "Payment_Interest", Payment_interest, subinstrumentid)  # DSL_LINE:115
+        createTransaction(posting_date, posting_date, "Servicing_Interest_Accrual", InterestAccrual, subinstrumentid)  # DSL_LINE:116
     
     # Get all transactions created via createTransaction()
     results = _get_transaction_results()
