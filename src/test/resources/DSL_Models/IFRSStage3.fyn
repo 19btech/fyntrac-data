@@ -1,0 +1,630 @@
+{
+  "fyn_version": "1.0",
+  "type": "custom",
+  "exported_at": "2026-04-25T03:36:36.246Z",
+  "template": {
+    "name": "IFRSStage3",
+    "description": "IFRSStage3",
+    "category": "IFRSStage3",
+    "rules": [
+      {
+        "name": "Stage 2 - Schedule",
+        "priority": 2,
+        "ruleType": "schedule",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE 2 - SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\nMeasurementType = collect_all(MeasurementType.MeasurementType)\nStartDate = collect_by_instrument(ECF.StartDate)\nExpectedCF = collect_by_instrument(ECF.ExpectedCF)\npostingdate = EOD.postingdate\neffectivedate = EOD.effectivedate\nsubinstrumentid = EOD.subinstrumentid\nOriginationDate = EOD.ATTRIBUTE_ORIGINATIONDATE_CURRENT\nLoanAmount = EOD.ATTRIBUTE_LOANAMOUNT_CURRENT\nTerm = EOD.ATTRIBUTE_TERM_CURRENT\nNoteRate = EOD.ATTRIBUTE_NOTERATE_CURRENT\npriotImpairment = EOD.BALANCES_ENDINGBALANCE_IMPAIRMENT\nMonthly_Rate = NoteRate/1200\nPMT_AM = pmt(Monthly_Rate,Term,-LoanAmount)\nFirst_Month = months_between(OriginationDate,postingdate)\nmaturitydate = add_months(OriginationDate,Term)\nUPB = if(eq(OriginationDate,postingdate), LoanAmount, EOD.BALANCES_ENDINGBALANCE_UPB)\n\n## Steps\n## Schedule\np = period(postingdate, maturitydate, \"M\")\nSchedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"monthNumber\": \"if(eq(period_index,0),First_Month,lag('monthNumber',1,First_Month)+1)\",\n    \"openingBalance\": \"if(eq(period_index,0),UPB,lag('closingBalance',1,0))\",\n    \"interestAccrued\": \"multiply(openingBalance,Monthly_Rate)\",\n    \"contractualCF\": \"if(eq(month_end,maturitydate),add(interestAccrued,lag('closingBalance',1,0)),PMT_AM)\",\n    \"ExpectedCFA\": \"if(eq(OriginationDate,postingdate),contractualCF,lookup(ExpectedCF, StartDate, month_end))\",\n    \"principalPayment\": \"contractualCF-interestAccrued\",\n    \"closingBalance\": \"subtract(openingBalance,principalPayment)\",\n    \"discountFactor\": \"1/pow(1+Monthly_Rate, monthNumber)\",\n    \"PV_CCF\": \"multiply(discountFactor,contractualCF)\",\n    \"PV_ECF\": \"multiply(discountFactor,ExpectedCFA)\",\n    \"impairmentCurrent\": \"subtract(PV_ECF,PV_CCF)\",\n    \"startdate\": \"StartDate\"\n}, {\"First_Month\": First_Month, \"UPB\": UPB, \"Monthly_Rate\": Monthly_Rate, \"maturitydate\": maturitydate, \"PMT_AM\": PMT_AM, \"ExpectedCF\": ExpectedCF, \"StartDate\": StartDate, \"pow\": pow, \"OriginationDate\": OriginationDate, \"postingdate\": postingdate})\nprint(Schedule)\ninterestAccrual = schedule_first(Schedule, \"interestAccrued\")\nPeriodImpairment = schedule_sum(Schedule, \"impairmentCurrent\")\n\nnetImpairment = subtract(PeriodImpairment,priotImpairment)\nprint(\"netImpairment =\", netImpairment)\nImpairment_Gain = if(gt(PeriodImpairment,0),PeriodImpairment,0)\nprint(\"Impairment_Gain =\", Impairment_Gain)\nImpairment_Loss = if(lt(netImpairment,0),netImpairment,0)\nprint(\"Impairment_Loss =\", Impairment_Loss)\nInterest_Accrual = if(eq(OriginationDate,postingdate),0,interestAccrual)\nprint(\"Interest_Accrual =\", Interest_Accrual)\nOrigination_Principal = if(eq(OriginationDate,postingdate),LoanAmount,0)\nprint(\"Origination_Principal =\", Origination_Principal)\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"IMPAIRMENT_GAIN\", Impairment_Gain, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"IMPAIRMENT_LOSS\", Impairment_Loss, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"INTEREST_ACCRUAL\", Interest_Accrual, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"ORIGINATION_PRINCIPAL\", Origination_Principal, subinstrumentid)",
+        "variables": [
+          {
+            "name": "netImpairment",
+            "source": "formula",
+            "formula": "subtract(PeriodImpairment,priotImpairment)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "Impairment_Gain",
+            "source": "formula",
+            "formula": "if(gt(PeriodImpairment,0),PeriodImpairment,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "Impairment_Loss",
+            "source": "formula",
+            "formula": "if(lt(netImpairment,0),netImpairment,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "Interest_Accrual",
+            "source": "formula",
+            "formula": "if(eq(OriginationDate,postingdate),0,interestAccrual)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "Origination_Principal",
+            "source": "formula",
+            "formula": "if(eq(OriginationDate,postingdate),LoanAmount,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "type": "IMPAIRMENT_GAIN",
+              "amount": "Impairment_Gain",
+              "postingDate": "postingdate",
+              "effectiveDate": "effectivedate",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "IMPAIRMENT_LOSS",
+              "amount": "Impairment_Loss",
+              "postingDate": "postingdate",
+              "effectiveDate": "postingdate",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "INTEREST_ACCRUAL",
+              "amount": "Interest_Accrual",
+              "postingDate": "postingdate",
+              "effectiveDate": "postingdate",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "ORIGINATION_PRINCIPAL",
+              "amount": "Origination_Principal",
+              "postingDate": "postingdate",
+              "effectiveDate": "postingdate",
+              "subInstrumentId": "subinstrumentid"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "Schedule",
+            "stepType": "schedule",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true,
+            "scheduleConfig": {
+              "periodType": "date",
+              "startDate": "",
+              "startDateSource": "formula",
+              "startDateField": "",
+              "startDateFormula": "postingdate",
+              "endDate": "",
+              "endDateSource": "formula",
+              "endDateField": "",
+              "endDateFormula": "maturitydate",
+              "periodCount": "12",
+              "periodCountSource": "value",
+              "periodCountField": "",
+              "periodCountFormula": "",
+              "frequency": "M",
+              "convention": "",
+              "columns": [
+                {
+                  "name": "period_date",
+                  "formula": "period_date"
+                },
+                {
+                  "name": "month_end",
+                  "formula": "end_of_month(period_date)"
+                },
+                {
+                  "name": "monthNumber",
+                  "formula": "if(eq(period_index,0),First_Month,lag('monthNumber',1,First_Month)+1)"
+                },
+                {
+                  "name": "openingBalance",
+                  "formula": "if(eq(period_index,0),UPB,lag('closingBalance',1,0))"
+                },
+                {
+                  "name": "interestAccrued",
+                  "formula": "multiply(openingBalance,Monthly_Rate)"
+                },
+                {
+                  "name": "contractualCF",
+                  "formula": "if(eq(month_end,maturitydate),add(interestAccrued,lag('closingBalance',1,0)),PMT_AM)"
+                },
+                {
+                  "name": "ExpectedCFA",
+                  "formula": "if(eq(OriginationDate,postingdate),contractualCF,lookup(ExpectedCF, StartDate, month_end))"
+                },
+                {
+                  "name": "principalPayment",
+                  "formula": "contractualCF-interestAccrued"
+                },
+                {
+                  "name": "closingBalance",
+                  "formula": "subtract(openingBalance,principalPayment)"
+                },
+                {
+                  "name": "discountFactor",
+                  "formula": "1/pow(1+Monthly_Rate, monthNumber)"
+                },
+                {
+                  "name": "PV_CCF",
+                  "formula": "multiply(discountFactor,contractualCF)"
+                },
+                {
+                  "name": "PV_ECF",
+                  "formula": "multiply(discountFactor,ExpectedCFA)"
+                },
+                {
+                  "name": "impairmentCurrent",
+                  "formula": "subtract(PV_ECF,PV_CCF)"
+                },
+                {
+                  "name": "startdate",
+                  "formula": "StartDate"
+                }
+              ],
+              "outputs": [
+                {
+                  "id": "o_1776898117860_0",
+                  "type": "first",
+                  "name": "interestAccrual",
+                  "column": "interestAccrued",
+                  "matchCol": "",
+                  "matchValue": ""
+                },
+                {
+                  "id": "o_1776898117860_1",
+                  "type": "sum",
+                  "name": "PeriodImpairment",
+                  "column": "impairmentCurrent",
+                  "matchCol": "",
+                  "matchValue": ""
+                }
+              ],
+              "contextVars": [
+                "First_Month",
+                "UPB",
+                "Monthly_Rate",
+                "maturitydate",
+                "PMT_AM",
+                "ExpectedCF",
+                "StartDate",
+                "pow",
+                "OriginationDate",
+                "postingdate"
+              ]
+            },
+            "outputVars": [
+              {
+                "name": "interestAccrual",
+                "type": "first",
+                "column": "interestAccrued"
+              },
+              {
+                "name": "PeriodImpairment",
+                "type": "sum",
+                "column": "impairmentCurrent"
+              }
+            ]
+          },
+          {
+            "name": "netImpairment",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "subtract(PeriodImpairment,priotImpairment)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Impairment_Gain",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(gt(PeriodImpairment,0),PeriodImpairment,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Impairment_Loss",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(lt(netImpairment,0),netImpairment,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Interest_Accrual",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(eq(OriginationDate,postingdate),0,interestAccrual)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Origination_Principal",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(eq(OriginationDate,postingdate),LoanAmount,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      },
+      {
+        "name": "Stage 1 - Parameters",
+        "priority": 1,
+        "ruleType": "conditional",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE 1 - PARAMETERS\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\nnetImpairment = subtract(PeriodImpairment,priotImpairment)\nImpairment_Gain = if(gt(PeriodImpairment,0),PeriodImpairment,0)\nImpairment_Loss = if(lt(netImpairment,0),netImpairment,0)\nInterest_Accrual = if(eq(OriginationDate,postingdate),0,interestAccrual)\nOrigination_Principal = if(eq(OriginationDate,postingdate),LoanAmount,0)\ninterestAccrual = schedule_first(Schedule, \"interestAccrued\")\nPeriodImpairment = schedule_sum(Schedule, \"impairmentCurrent\")\n\n## Steps\nMeasurementType = collect_all(MeasurementType.MeasurementType)\nprint(\"MeasurementType =\", MeasurementType)\nStartDate = collect_by_instrument(ECF.StartDate)\nprint(\"StartDate =\", StartDate)\nExpectedCF = collect_by_instrument(ECF.ExpectedCF)\nprint(\"ExpectedCF =\", ExpectedCF)\npostingdate = EOD.postingdate\nprint(\"postingdate =\", postingdate)\neffectivedate = EOD.effectivedate\nprint(\"effectivedate =\", effectivedate)\nsubinstrumentid = EOD.subinstrumentid\nprint(\"subinstrumentid =\", subinstrumentid)\nOriginationDate = EOD.ATTRIBUTE_ORIGINATIONDATE_CURRENT\nprint(\"OriginationDate =\", OriginationDate)\nLoanAmount = EOD.ATTRIBUTE_LOANAMOUNT_CURRENT\nprint(\"LoanAmount =\", LoanAmount)\nTerm = EOD.ATTRIBUTE_TERM_CURRENT\nprint(\"Term =\", Term)\nNoteRate = EOD.ATTRIBUTE_NOTERATE_CURRENT\nprint(\"NoteRate =\", NoteRate)\npriotImpairment = EOD.BALANCES_ENDINGBALANCE_IMPAIRMENT\nprint(\"priotImpairment =\", priotImpairment)\nMonthly_Rate = NoteRate/1200\nprint(\"Monthly_Rate =\", Monthly_Rate)\nPMT_AM = pmt(Monthly_Rate,Term,-LoanAmount)\nprint(\"PMT_AM =\", PMT_AM)\nFirst_Month = months_between(OriginationDate,postingdate)\nprint(\"First_Month =\", First_Month)\nmaturitydate = add_months(OriginationDate,Term)\nprint(\"maturitydate =\", maturitydate)\n## Conditional Logic\nUPB = if(eq(OriginationDate,postingdate), LoanAmount, EOD.BALANCES_ENDINGBALANCE_UPB)\nprint(\"UPB =\", UPB)\n",
+        "variables": [
+          {
+            "name": "MeasurementType",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "MeasurementType.MeasurementType",
+            "collectType": "collect_all"
+          },
+          {
+            "name": "StartDate",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "ECF.StartDate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "ExpectedCF",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "ECF.ExpectedCF",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.postingdate",
+            "collectType": "collect"
+          },
+          {
+            "name": "effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.effectivedate",
+            "collectType": "collect"
+          },
+          {
+            "name": "subinstrumentid",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.subinstrumentid",
+            "collectType": "collect"
+          },
+          {
+            "name": "OriginationDate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_ORIGINATIONDATE_CURRENT",
+            "collectType": "collect"
+          },
+          {
+            "name": "LoanAmount",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_LOANAMOUNT_CURRENT",
+            "collectType": "collect"
+          },
+          {
+            "name": "Term",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_TERM_CURRENT",
+            "collectType": "collect"
+          },
+          {
+            "name": "NoteRate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_NOTERATE_CURRENT",
+            "collectType": "collect"
+          },
+          {
+            "name": "priotImpairment",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_IMPAIRMENT",
+            "collectType": "collect"
+          },
+          {
+            "name": "Monthly_Rate",
+            "source": "formula",
+            "formula": "NoteRate/1200",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "PMT_AM",
+            "source": "formula",
+            "formula": "pmt(Monthly_Rate,Term,-LoanAmount)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "First_Month",
+            "source": "formula",
+            "formula": "months_between(OriginationDate,postingdate)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "maturitydate",
+            "source": "formula",
+            "formula": "add_months(OriginationDate,Term)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          }
+        ],
+        "conditions": [
+          {
+            "condition": "eq(OriginationDate,postingdate)",
+            "thenFormula": "LoanAmount"
+          }
+        ],
+        "elseFormula": "EOD.BALANCES_ENDINGBALANCE_UPB",
+        "conditionResultVar": "UPB",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": false,
+          "transactions": []
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "MeasurementType",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "MeasurementType.MeasurementType",
+            "collectType": "collect_all",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "StartDate",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "ECF.StartDate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "ExpectedCF",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "ECF.ExpectedCF",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.postingdate",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.effectivedate",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "subinstrumentid",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.subinstrumentid",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "OriginationDate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_ORIGINATIONDATE_CURRENT",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "LoanAmount",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_LOANAMOUNT_CURRENT",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Term",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_TERM_CURRENT",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "NoteRate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.ATTRIBUTE_NOTERATE_CURRENT",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "priotImpairment",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_IMPAIRMENT",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Monthly_Rate",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "NoteRate/1200",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "PMT_AM",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "pmt(Monthly_Rate,Term,-LoanAmount)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "First_Month",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "months_between(OriginationDate,postingdate)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "maturitydate",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "add_months(OriginationDate,Term)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "UPB",
+            "stepType": "condition",
+            "conditions": [
+              {
+                "condition": "eq(OriginationDate,postingdate)",
+                "thenFormula": "LoanAmount"
+              }
+            ],
+            "elseFormula": "EOD.BALANCES_ENDINGBALANCE_UPB",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      }
+    ],
+    "schedules": [],
+    "combinedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE 1 - PARAMETERS\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\nMeasurementType = collect_all(MeasurementType.MeasurementType)\nprint(\"MeasurementType =\", MeasurementType)\nStartDate = collect_by_instrument(ECF.StartDate)\nprint(\"StartDate =\", StartDate)\nExpectedCF = collect_by_instrument(ECF.ExpectedCF)\nprint(\"ExpectedCF =\", ExpectedCF)\npostingdate = EOD.postingdate\nprint(\"postingdate =\", postingdate)\neffectivedate = EOD.effectivedate\nprint(\"effectivedate =\", effectivedate)\nsubinstrumentid = EOD.subinstrumentid\nprint(\"subinstrumentid =\", subinstrumentid)\nOriginationDate = EOD.ATTRIBUTE_ORIGINATIONDATE_CURRENT\nprint(\"OriginationDate =\", OriginationDate)\nLoanAmount = EOD.ATTRIBUTE_LOANAMOUNT_CURRENT\nprint(\"LoanAmount =\", LoanAmount)\nTerm = EOD.ATTRIBUTE_TERM_CURRENT\nprint(\"Term =\", Term)\nNoteRate = EOD.ATTRIBUTE_NOTERATE_CURRENT\nprint(\"NoteRate =\", NoteRate)\npriotImpairment = EOD.BALANCES_ENDINGBALANCE_IMPAIRMENT\nprint(\"priotImpairment =\", priotImpairment)\nMonthly_Rate = NoteRate/1200\nprint(\"Monthly_Rate =\", Monthly_Rate)\nPMT_AM = pmt(Monthly_Rate,Term,-LoanAmount)\nprint(\"PMT_AM =\", PMT_AM)\nFirst_Month = months_between(OriginationDate,postingdate)\nprint(\"First_Month =\", First_Month)\nmaturitydate = add_months(OriginationDate,Term)\nprint(\"maturitydate =\", maturitydate)\n## Conditional Logic\nUPB = if(eq(OriginationDate,postingdate), LoanAmount, EOD.BALANCES_ENDINGBALANCE_UPB)\nprint(\"UPB =\", UPB)\n\n\n## ═══════════════════════════════════════════════════════════════\n## STAGE 2 - SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\n## Schedule\np = period(postingdate, maturitydate, \"M\")\nSchedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"monthNumber\": \"if(eq(period_index,0),First_Month,lag('monthNumber',1,First_Month)+1)\",\n    \"openingBalance\": \"if(eq(period_index,0),UPB,lag('closingBalance',1,0))\",\n    \"interestAccrued\": \"multiply(openingBalance,Monthly_Rate)\",\n    \"contractualCF\": \"if(eq(month_end,maturitydate),add(interestAccrued,lag('closingBalance',1,0)),PMT_AM)\",\n    \"ExpectedCFA\": \"if(eq(OriginationDate,postingdate),contractualCF,lookup(ExpectedCF, StartDate, month_end))\",\n    \"principalPayment\": \"contractualCF-interestAccrued\",\n    \"closingBalance\": \"subtract(openingBalance,principalPayment)\",\n    \"discountFactor\": \"1/pow(1+Monthly_Rate, monthNumber)\",\n    \"PV_CCF\": \"multiply(discountFactor,contractualCF)\",\n    \"PV_ECF\": \"multiply(discountFactor,ExpectedCFA)\",\n    \"impairmentCurrent\": \"subtract(PV_ECF,PV_CCF)\",\n    \"startdate\": \"StartDate\"\n}, {\"First_Month\": First_Month, \"UPB\": UPB, \"Monthly_Rate\": Monthly_Rate, \"maturitydate\": maturitydate, \"PMT_AM\": PMT_AM, \"ExpectedCF\": ExpectedCF, \"StartDate\": StartDate, \"pow\": pow, \"OriginationDate\": OriginationDate, \"postingdate\": postingdate})\nprint(Schedule)\ninterestAccrual = schedule_first(Schedule, \"interestAccrued\")\nPeriodImpairment = schedule_sum(Schedule, \"impairmentCurrent\")\n\nnetImpairment = subtract(PeriodImpairment,priotImpairment)\nprint(\"netImpairment =\", netImpairment)\nImpairment_Gain = if(gt(PeriodImpairment,0),PeriodImpairment,0)\nprint(\"Impairment_Gain =\", Impairment_Gain)\nImpairment_Loss = if(lt(netImpairment,0),netImpairment,0)\nprint(\"Impairment_Loss =\", Impairment_Loss)\nInterest_Accrual = if(eq(OriginationDate,postingdate),0,interestAccrual)\nprint(\"Interest_Accrual =\", Interest_Accrual)\nOrigination_Principal = if(eq(OriginationDate,postingdate),LoanAmount,0)\nprint(\"Origination_Principal =\", Origination_Principal)\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"IMPAIRMENT_GAIN\", Impairment_Gain, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"IMPAIRMENT_LOSS\", Impairment_Loss, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"INTEREST_ACCRUAL\", Interest_Accrual, subinstrumentid)\ncreateTransaction(postingdate, postingdate, \"ORIGINATION_PRINCIPAL\", Origination_Principal, subinstrumentid)",
+    "created_at": "2026-04-25T03:20:36.318236+00:00",
+    "updated_at": "2026-04-25T03:33:36.778704+00:00"
+  }
+}
