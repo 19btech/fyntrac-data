@@ -1,0 +1,690 @@
+{
+  "fyn_version": "1.0",
+  "type": "custom",
+  "exported_at": "2026-04-24T05:14:26.303Z",
+  "template": {
+    "name": "RevenueFinal111",
+    "description": "RevenueFinal111",
+    "category": "RevenueFinal111",
+    "rules": [
+      {
+        "name": "Stage 3 - Unbilled Charge",
+        "priority": 3,
+        "ruleType": "conditional",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE 3 - UNBILLED CHARGE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\ncatalog_ids = collect_all(CATALOG.ProductId)\ncatalog_name = collect_all(CATALOG.ProductName)\nproduct_id = collect_by_instrument(REV.ATTRIBUTE_PRODUCT_ID_CURRENT)\nproduct_names = lookup(catalog_name,catalog_ids,product_id)\nsale_price = collect_by_instrument(REV.ATTRIBUTE_SALE_PRICE_CURRENT)\nquantity = collect_by_instrument(REV.ATTRIBUTE_QUANTITY_CURRENT)\nesp_values = multiply(sale_price, quantity)\nsubinstrument_ids = collect_by_instrument(REV.subinstrumentid)\ntotalesp = sum(esp_values)\nstart_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT)\nend_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT)\nposting_date = REV.postingdate\nEOD_REVENUE = collect_by_instrument(EOD.BALANCES_ENDINGBALANCE_REVENUE)\nrecognition_results_LTD = schedule_sum(Schedule, \"LTD_revenue\")\nrecognition_results = schedule_filter(Schedule, \"month_end\", posting_date, \"period_revenue\")\nSSP = apply_each(product_names, \"if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))\", {\"product_names\": product_names, \"esp_values\": esp_values})\nratio = apply_each(SSP, \"divide(each,totalssp)\", {\"SSP\": SSP})\nallocation = apply_each(ratio, \"multiply(each,totalesp)\", {\"totalesp\": totalesp, \"ratio\": ratio})\nrevenue_adj = apply_each(recognition_results_LTD, \"subtract(each,array_get(EOD_REVENUE,index,0))\", {\"EOD_REVENUE\": EOD_REVENUE, \"recognition_results_LTD\": recognition_results_LTD})\ntotalssp = sum(SSP)\nREV = add(recognition_results, revenue_adj)\n\n## Steps\ntotal_revenue = sum(recognition_results)\nprint(\"total_revenue =\", total_revenue)\nunbilled_charge = multiply(total_revenue, -1)\nprint(\"unbilled_charge =\", unbilled_charge)\nEOD_UNBILLED = EOD.BALANCES_ENDINGBALANCE_UNBILLED\nprint(\"EOD_UNBILLED =\", EOD_UNBILLED)\nEOD_BILLING = EOD.BALANCES_ENDINGBALANCE_BILLING\nprint(\"EOD_BILLING =\", EOD_BILLING)\n## Conditional Logic\nUnbilled_amount = if(gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING), unbilled_charge, multiply(EOD_UNBILLED, -1))\nprint(\"Unbilled_amount =\", Unbilled_amount)\n\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"UNBILLED_CHARGE\", Unbilled_amount, 0.0)",
+        "variables": [
+          {
+            "name": "total_revenue",
+            "source": "formula",
+            "formula": "sum(recognition_results)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "unbilled_charge",
+            "source": "formula",
+            "formula": "multiply(total_revenue, -1)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "EOD_UNBILLED",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_UNBILLED",
+            "collectType": "collect"
+          },
+          {
+            "name": "EOD_BILLING",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_BILLING",
+            "collectType": "collect"
+          }
+        ],
+        "conditions": [
+          {
+            "condition": "gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING)",
+            "thenFormula": "unbilled_charge"
+          }
+        ],
+        "elseFormula": "multiply(EOD_UNBILLED, -1)",
+        "conditionResultVar": "Unbilled_amount",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "type": "UNBILLED_CHARGE",
+              "amount": "Unbilled_amount",
+              "postingDate": "posting_date",
+              "effectiveDate": "posting_date",
+              "subInstrumentId": "0.0"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "total_revenue",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(recognition_results)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "unbilled_charge",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "multiply(total_revenue, -1)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "EOD_UNBILLED",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_UNBILLED",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "EOD_BILLING",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_BILLING",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Unbilled_amount",
+            "stepType": "condition",
+            "conditions": [
+              {
+                "condition": "gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING)",
+                "thenFormula": "unbilled_charge"
+              }
+            ],
+            "elseFormula": "multiply(EOD_UNBILLED, -1)",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      },
+      {
+        "name": "Stage 2 - Revenue Schedule",
+        "priority": 2,
+        "ruleType": "schedule",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE 2 - REVENUE SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\ncatalog_ids = collect_all(CATALOG.ProductId)\ncatalog_name = collect_all(CATALOG.ProductName)\nproduct_id = collect_by_instrument(REV.ATTRIBUTE_PRODUCT_ID_CURRENT)\nproduct_names = lookup(catalog_name,catalog_ids,product_id)\nsale_price = collect_by_instrument(REV.ATTRIBUTE_SALE_PRICE_CURRENT)\nquantity = collect_by_instrument(REV.ATTRIBUTE_QUANTITY_CURRENT)\nesp_values = multiply(sale_price, quantity)\nsubinstrument_ids = collect_by_instrument(REV.subinstrumentid)\ntotalesp = sum(esp_values)\ntotal_revenue = sum(recognition_results)\nunbilled_charge = multiply(total_revenue, -1)\nEOD_UNBILLED = EOD.BALANCES_ENDINGBALANCE_UNBILLED\nEOD_BILLING = EOD.BALANCES_ENDINGBALANCE_BILLING\nUnbilled_amount = if(gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING), unbilled_charge, multiply(EOD_UNBILLED, -1))\nSSP = apply_each(product_names, \"if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))\", {\"product_names\": product_names, \"esp_values\": esp_values})\nratio = apply_each(SSP, \"divide(each,totalssp)\", {\"SSP\": SSP})\nallocation = apply_each(ratio, \"multiply(each,totalesp)\", {\"totalesp\": totalesp, \"ratio\": ratio})\ntotalssp = sum(SSP)\n\n## Steps\nstart_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT)\nprint(\"start_dates =\", start_dates)\nend_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT)\nprint(\"end_dates =\", end_dates)\nposting_date = REV.postingdate\nprint(\"posting_date =\", posting_date)\n## Schedule\np = period(start_dates, end_dates, \"M\")\nSchedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"days\": \"if(eq(start_date, end_date), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1), if(eq(period_index, 0), days_between(start_date, end_of_month(start_date)), if(eq(period_index, subtract(total_periods, 1)), add(days_between(start_of_month(end_date), end_date), 1), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1))))\",\n    \"LTD_days\": \"if(eq(start_date, end_date), add(days_between(start_of_month(start_date), end_of_month(end_date)), 1), if(eq(period_date, end_date), days_between(start_date, end_date), days_between(start_date, end_of_month(period_date))))\",\n    \"daily_revenue\": \"if(eq(start_date, end_date), divide(allocation, days), divide(allocation, 365))\",\n    \"period_revenue\": \"multiply(multiply(daily_revenue, days), -1)\",\n    \"LTD_revenue\": \"multiply(if(lt(period_date, subtract_months(posting_date, 1)), multiply(daily_revenue, days), 0), -1)\"\n}, {\"allocation\": allocation, \"posting_date\": posting_date})\nprint(Schedule)\nrecognition_results_LTD = schedule_sum(Schedule, \"LTD_revenue\")\nrecognition_results = schedule_filter(Schedule, \"month_end\", posting_date, \"period_revenue\")\n\nEOD_REVENUE = collect_by_instrument(EOD.BALANCES_ENDINGBALANCE_REVENUE)\nprint(\"EOD_REVENUE =\", EOD_REVENUE)\n## Iteration\nrevenue_adj = apply_each(recognition_results_LTD, \"subtract(each,array_get(EOD_REVENUE,index,0))\", {\"recognition_results_LTD\": recognition_results_LTD, \"EOD_REVENUE\": EOD_REVENUE})\nprint(\"revenue_adj =\", revenue_adj)\n\nREV = add(recognition_results, revenue_adj)\nprint(\"REV =\", REV)\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"REVENUE\", REV, subinstrument_ids)",
+        "variables": [
+          {
+            "name": "start_dates",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "end_dates",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "posting_date",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.postingdate",
+            "collectType": "collect"
+          },
+          {
+            "name": "EOD_REVENUE",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_REVENUE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "REV",
+            "source": "formula",
+            "formula": "add(recognition_results, revenue_adj)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [
+          {
+            "type": "apply_each",
+            "sourceArray": "recognition_results_LTD",
+            "varName": "each",
+            "expression": "subtract(each,array_get(EOD_REVENUE,index,0))",
+            "resultVar": "revenue_adj",
+            "secondArray": "",
+            "secondVar": "second"
+          }
+        ],
+        "iterConfig": {
+          "type": "apply_each",
+          "sourceArray": "recognition_results_LTD",
+          "varName": "each",
+          "expression": "subtract(each,array_get(EOD_REVENUE,index,0))",
+          "resultVar": "revenue_adj",
+          "secondArray": "",
+          "secondVar": "second"
+        },
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "type": "REVENUE",
+              "amount": "REV",
+              "postingDate": "posting_date",
+              "effectiveDate": "posting_date",
+              "subInstrumentId": "subinstrument_ids"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "start_dates",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "end_dates",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "posting_date",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.postingdate",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Schedule",
+            "stepType": "schedule",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true,
+            "scheduleConfig": {
+              "periodType": "date",
+              "startDate": "",
+              "startDateSource": "formula",
+              "startDateField": "",
+              "startDateFormula": "start_dates",
+              "endDate": "",
+              "endDateSource": "formula",
+              "endDateField": "",
+              "endDateFormula": "end_dates",
+              "periodCount": "12",
+              "periodCountSource": "value",
+              "periodCountField": "",
+              "periodCountFormula": "",
+              "frequency": "M",
+              "convention": "",
+              "columns": [
+                {
+                  "name": "period_date",
+                  "formula": "period_date"
+                },
+                {
+                  "name": "month_end",
+                  "formula": "end_of_month(period_date)"
+                },
+                {
+                  "name": "days",
+                  "formula": "if(eq(start_date, end_date), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1), if(eq(period_index, 0), days_between(start_date, end_of_month(start_date)), if(eq(period_index, subtract(total_periods, 1)), add(days_between(start_of_month(end_date), end_date), 1), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1))))"
+                },
+                {
+                  "name": "LTD_days",
+                  "formula": "if(eq(start_date, end_date), add(days_between(start_of_month(start_date), end_of_month(end_date)), 1), if(eq(period_date, end_date), days_between(start_date, end_date), days_between(start_date, end_of_month(period_date))))"
+                },
+                {
+                  "name": "daily_revenue",
+                  "formula": "if(eq(start_date, end_date), divide(allocation, days), divide(allocation, 365))"
+                },
+                {
+                  "name": "period_revenue",
+                  "formula": "multiply(multiply(daily_revenue, days), -1)"
+                },
+                {
+                  "name": "LTD_revenue",
+                  "formula": "multiply(if(lt(period_date, subtract_months(posting_date, 1)), multiply(daily_revenue, days), 0), -1)"
+                }
+              ],
+              "extractFirst": false,
+              "extractLast": false,
+              "extractColumn": "",
+              "firstVarName": "",
+              "lastVarName": "",
+              "enableSum": true,
+              "sumColumn": "LTD_revenue",
+              "sumVarName": "recognition_results_LTD",
+              "enableCol": false,
+              "colColumn": "",
+              "colVarName": "",
+              "enableFilter": true,
+              "filterVarName": "recognition_results",
+              "filterMatchCol": "month_end",
+              "filterMatchValue": "posting_date",
+              "filterReturnCol": "period_revenue",
+              "contextVars": [
+                "allocation",
+                "posting_date"
+              ]
+            },
+            "outputVars": [
+              {
+                "name": "recognition_results_LTD",
+                "type": "sum",
+                "column": "LTD_revenue"
+              },
+              {
+                "name": "recognition_results",
+                "type": "filter",
+                "column": "period_revenue",
+                "matchCol": "month_end",
+                "matchValue": "posting_date"
+              }
+            ]
+          },
+          {
+            "name": "EOD_REVENUE",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_ENDINGBALANCE_REVENUE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "revenue_adj",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "recognition_results_LTD",
+                "varName": "each",
+                "expression": "subtract(each,array_get(EOD_REVENUE,index,0))",
+                "resultVar": "revenue_adj",
+                "secondArray": "",
+                "secondVar": "second"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "REV",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "add(recognition_results, revenue_adj)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      },
+      {
+        "name": "Stage1 - Revenue Allocation",
+        "priority": 1,
+        "ruleType": "iteration",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE1 - REVENUE ALLOCATION\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\ndebug_pn = product_names\nstart_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT)\nend_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT)\nposting_date = REV.postingdate\nEOD_REVENUE = collect_by_instrument(EOD.BALANCES_ENDINGBALANCE_REVENUE)\nrecognition_results_LTD = schedule_sum(Schedule, \"LTD_revenue\")\nrecognition_results = schedule_filter(Schedule, \"month_end\", posting_date, \"period_revenue\")\ntotal_revenue = sum(recognition_results)\nunbilled_charge = multiply(total_revenue, -1)\nEOD_UNBILLED = EOD.BALANCES_ENDINGBALANCE_UNBILLED\nEOD_BILLING = EOD.BALANCES_ENDINGBALANCE_BILLING\nUnbilled_amount = if(gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING), unbilled_charge, multiply(EOD_UNBILLED, -1))\nrevenue_adj = apply_each(recognition_results_LTD, \"subtract(each,array_get(EOD_REVENUE,index,0))\", {\"EOD_REVENUE\": EOD_REVENUE, \"recognition_results_LTD\": recognition_results_LTD})\nREV = add(recognition_results, revenue_adj)\n\n## Steps\ncatalog_ids = collect_all(CATALOG.ProductId)\nprint(\"catalog_ids =\", catalog_ids)\ncatalog_name = collect_all(CATALOG.ProductName)\nprint(\"catalog_name =\", catalog_name)\nproduct_id = collect_by_instrument(REV.ATTRIBUTE_PRODUCT_ID_CURRENT)\nprint(\"product_id =\", product_id)\nproduct_names = lookup(catalog_name,catalog_ids,product_id)\nprint(\"product_names =\", product_names)\nsale_price = collect_by_instrument(REV.ATTRIBUTE_SALE_PRICE_CURRENT)\nprint(\"sale_price =\", sale_price)\nquantity = collect_by_instrument(REV.ATTRIBUTE_QUANTITY_CURRENT)\nprint(\"quantity =\", quantity)\nesp_values = multiply(sale_price, quantity)\nprint(\"esp_values =\", esp_values)\n## Iteration\nSSP = apply_each(product_names, \"if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))\", {\"product_names\": product_names, \"esp_values\": esp_values})\nprint(\"SSP =\", SSP)\n\nsubinstrument_ids = collect_by_instrument(REV.subinstrumentid)\nprint(\"subinstrument_ids =\", subinstrument_ids)\ntotalssp = sum(SSP)\nprint(\"totalssp =\", totalssp)\ntotalesp = sum(esp_values)\nprint(\"totalesp =\", totalesp)\n## Iteration\nratio = apply_each(SSP, \"divide(each,totalssp)\", {\"SSP\": SSP, \"totalssp\": totalssp})\nprint(\"ratio =\", ratio)\n\n## Iteration\nallocation = apply_each(ratio, \"multiply(each,totalesp)\", {\"totalesp\": totalesp, \"ratio\": ratio})\nprint(\"allocation =\", allocation)\n",
+        "variables": [
+          {
+            "name": "catalog_ids",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "CATALOG.ProductId",
+            "collectType": "collect_all"
+          },
+          {
+            "name": "catalog_name",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "CATALOG.ProductName",
+            "collectType": "collect_all"
+          },
+          {
+            "name": "product_id",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_PRODUCT_ID_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "product_names",
+            "source": "formula",
+            "formula": "lookup(catalog_name,catalog_ids,product_id)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "sale_price",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_SALE_PRICE_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "quantity",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_QUANTITY_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "esp_values",
+            "source": "formula",
+            "formula": "multiply(sale_price, quantity)",
+            "value": "",
+            "eventField": "REV.EXTENDED_SALEPRICE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "subinstrument_ids",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "totalssp",
+            "source": "formula",
+            "formula": "sum(SSP)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          },
+          {
+            "name": "totalesp",
+            "source": "formula",
+            "formula": "sum(esp_values)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [
+          {
+            "type": "apply_each",
+            "sourceArray": "product_names",
+            "varName": "each",
+            "expression": "if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))",
+            "resultVar": "SSP",
+            "secondArray": "",
+            "secondVar": "second"
+          }
+        ],
+        "iterConfig": {
+          "type": "apply_each",
+          "sourceArray": "product_names",
+          "varName": "each",
+          "expression": "if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))",
+          "resultVar": "SSP",
+          "secondArray": "",
+          "secondVar": "second"
+        },
+        "outputs": {
+          "printResult": true,
+          "createTransaction": false,
+          "transactions": []
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "catalog_ids",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "CATALOG.ProductId",
+            "collectType": "collect_all",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "catalog_name",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "CATALOG.ProductName",
+            "collectType": "collect_all",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "product_id",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_PRODUCT_ID_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "product_names",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "lookup(catalog_name,catalog_ids,product_id)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "sale_price",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_SALE_PRICE_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "quantity",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.ATTRIBUTE_QUANTITY_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "esp_values",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "multiply(sale_price, quantity)",
+            "value": "",
+            "eventField": "REV.EXTENDED_SALEPRICE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "SSP",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "product_names",
+                "varName": "each",
+                "expression": "if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))",
+                "resultVar": "SSP",
+                "secondArray": "",
+                "secondVar": "second"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "subinstrument_ids",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REV.subinstrumentid",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "totalssp",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(SSP)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "totalesp",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(esp_values)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "ratio",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "SSP",
+                "varName": "each",
+                "expression": "divide(each,totalssp)",
+                "resultVar": "ratio",
+                "secondArray": "",
+                "secondVar": "second"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "allocation",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "ratio",
+                "varName": "each",
+                "expression": "multiply(each,totalesp)",
+                "resultVar": "allocation",
+                "secondArray": "",
+                "secondVar": "second"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      }
+    ],
+    "schedules": [],
+    "combinedCode": "## ═══════════════════════════════════════════════════════════════\n## STAGE1 - REVENUE ALLOCATION\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\ncatalog_ids = collect_all(CATALOG.ProductId)\nprint(\"catalog_ids =\", catalog_ids)\ncatalog_name = collect_all(CATALOG.ProductName)\nprint(\"catalog_name =\", catalog_name)\nproduct_id = collect_by_instrument(REV.ATTRIBUTE_PRODUCT_ID_CURRENT)\nprint(\"product_id =\", product_id)\nproduct_names = lookup(catalog_name,catalog_ids,product_id)\nprint(\"product_names =\", product_names)\nsale_price = collect_by_instrument(REV.ATTRIBUTE_SALE_PRICE_CURRENT)\nprint(\"sale_price =\", sale_price)\nquantity = collect_by_instrument(REV.ATTRIBUTE_QUANTITY_CURRENT)\nprint(\"quantity =\", quantity)\nesp_values = multiply(sale_price, quantity)\nprint(\"esp_values =\", esp_values)\n## Iteration\nSSP = apply_each(product_names, \"if(eq_ignore_case(each, 'discount'), 0, array_get(esp_values, index, 0))\", {\"product_names\": product_names, \"esp_values\": esp_values})\nprint(\"SSP =\", SSP)\n\nsubinstrument_ids = collect_by_instrument(REV.subinstrumentid)\nprint(\"subinstrument_ids =\", subinstrument_ids)\ntotalssp = sum(SSP)\nprint(\"totalssp =\", totalssp)\ntotalesp = sum(esp_values)\nprint(\"totalesp =\", totalesp)\n## Iteration\nratio = apply_each(SSP, \"divide(each,totalssp)\", {\"SSP\": SSP, \"totalssp\": totalssp})\nprint(\"ratio =\", ratio)\n\n## Iteration\nallocation = apply_each(ratio, \"multiply(each,totalesp)\", {\"totalesp\": totalesp, \"ratio\": ratio})\nprint(\"allocation =\", allocation)\n\n\n## ═══════════════════════════════════════════════════════════════\n## STAGE 2 - REVENUE SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\nstart_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_STARTDATE_CURRENT)\nprint(\"start_dates =\", start_dates)\nend_dates = collect_by_instrument(REV.ATTRIBUTE_ITEM_ENDDATE_CURRENT)\nprint(\"end_dates =\", end_dates)\nposting_date = REV.postingdate\nprint(\"posting_date =\", posting_date)\n## Schedule\np = period(start_dates, end_dates, \"M\")\nSchedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"days\": \"if(eq(start_date, end_date), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1), if(eq(period_index, 0), days_between(start_date, end_of_month(start_date)), if(eq(period_index, subtract(total_periods, 1)), add(days_between(start_of_month(end_date), end_date), 1), add(days_between(start_of_month(period_date), end_of_month(period_date)), 1))))\",\n    \"LTD_days\": \"if(eq(start_date, end_date), add(days_between(start_of_month(start_date), end_of_month(end_date)), 1), if(eq(period_date, end_date), days_between(start_date, end_date), days_between(start_date, end_of_month(period_date))))\",\n    \"daily_revenue\": \"if(eq(start_date, end_date), divide(allocation, days), divide(allocation, 365))\",\n    \"period_revenue\": \"multiply(multiply(daily_revenue, days), -1)\",\n    \"LTD_revenue\": \"multiply(if(lt(period_date, subtract_months(posting_date, 1)), multiply(daily_revenue, days), 0), -1)\"\n}, {\"allocation\": allocation, \"posting_date\": posting_date})\nprint(Schedule)\nrecognition_results_LTD = schedule_sum(Schedule, \"LTD_revenue\")\nrecognition_results = schedule_filter(Schedule, \"month_end\", posting_date, \"period_revenue\")\n\nEOD_REVENUE = collect_by_instrument(EOD.BALANCES_ENDINGBALANCE_REVENUE)\nprint(\"EOD_REVENUE =\", EOD_REVENUE)\n## Iteration\nrevenue_adj = apply_each(recognition_results_LTD, \"subtract(each,array_get(EOD_REVENUE,index,0))\", {\"recognition_results_LTD\": recognition_results_LTD, \"EOD_REVENUE\": EOD_REVENUE})\nprint(\"revenue_adj =\", revenue_adj)\n\nREV = add(recognition_results, revenue_adj)\nprint(\"REV =\", REV)\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"REVENUE\", REV, subinstrument_ids)\n\n## ═══════════════════════════════════════════════════════════════\n## STAGE 3 - UNBILLED CHARGE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\ntotal_revenue = sum(recognition_results)\nprint(\"total_revenue =\", total_revenue)\nunbilled_charge = multiply(total_revenue, -1)\nprint(\"unbilled_charge =\", unbilled_charge)\nEOD_UNBILLED = EOD.BALANCES_ENDINGBALANCE_UNBILLED\nprint(\"EOD_UNBILLED =\", EOD_UNBILLED)\nEOD_BILLING = EOD.BALANCES_ENDINGBALANCE_BILLING\nprint(\"EOD_BILLING =\", EOD_BILLING)\n## Conditional Logic\nUnbilled_amount = if(gt(add(EOD_UNBILLED, unbilled_charge) , EOD_BILLING), unbilled_charge, multiply(EOD_UNBILLED, -1))\nprint(\"Unbilled_amount =\", Unbilled_amount)\n\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"UNBILLED_CHARGE\", Unbilled_amount, 0.0)",
+    "created_at": "2026-04-22T21:05:05.817079+00:00",
+    "updated_at": "2026-04-23T18:48:06.580590+00:00"
+  }
+}

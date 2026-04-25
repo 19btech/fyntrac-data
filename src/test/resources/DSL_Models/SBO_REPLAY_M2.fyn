@@ -1,0 +1,774 @@
+{
+  "fyn_version": "1.0",
+  "type": "custom",
+  "exported_at": "2026-04-25T06:58:26.046Z",
+  "template": {
+    "name": "SBO_REPLAY_M2",
+    "description": "SBO_REPLAY_M2",
+    "category": "SBO",
+    "rules": [
+      {
+        "name": "Step 3 - Accrual",
+        "priority": 3,
+        "ruleType": "conditional",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STEP 3 - ACCRUAL\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\nreplay_remit = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_REMIT)\nposting_date = EOD.postingdate\nCurrent_Acc_Bal = EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL\nCurrent_UPB_Bal = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nreplay_date = REPLAY.effectivedate\npayment_date = TRANX.effectivedate\npayment_amount = if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)\neffective_date = EOD.effectivedate\nsubinstrumentid = EOD.subinstrumentid\ninterest_rate = EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100\ntimeline_list = array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)\nREPLAY_REP_RAYMENTUPB_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB)\nREPLAY_REP_SIA_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL)\ntimelinelist_count = count(timeline_list)\nreplay_air = subtract(Current_Acc_Bal,days_accrual)\nreplay_upb = subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))\ndays_accrual = schedule_sum(BACKTRACK_SCHEDULE, \"days_accrual\")\nReplay_EndingUPB = schedule_last(Schedule, \"End_UPB\")\nReplay_EndingAIR = schedule_last(Schedule, \"End_AIR\")\n\n## Steps\nBeginningUPB = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"BeginningUPB =\", BeginningUPB)\nBeginningAIR = EOD.BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE\nprint(\"BeginningAIR =\", BeginningAIR)\nPayment_interest = min(payment_amount, BeginningAIR)*-1\nprint(\"Payment_interest =\", Payment_interest)\npayment_principal = max(payment_amount+Payment_interest, 0)*-1\nprint(\"payment_principal =\", payment_principal)\nInterestAccrual = ((BeginningUPB+payment_principal)*interest_rate)/360\nprint(\"InterestAccrual =\", InterestAccrual)\nEndingUPB = BeginningUPB+payment_principal\nprint(\"EndingUPB =\", EndingUPB)\nEndingAIR = BeginningAIR+Payment_interest+InterestAccrual\nprint(\"EndingAIR =\", EndingAIR)\n## Conditional Logic\nPrincipal_Adj = if(eq(Replay_EndingUPB,0), 0, subtract(Replay_EndingUPB,EndingUPB))\nprint(\"Principal_Adj =\", Principal_Adj)\n\n## Conditional Logic\nInterest_Adj = if(eq(Replay_EndingAIR,0), 0, subtract(Replay_EndingAIR,EndingAIR))\nprint(\"Interest_Adj =\", Interest_Adj)\n\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"Principal_Adjustment\", Principal_Adj, subinstrumentid)\ncreateTransaction(posting_date, posting_date, \"Interest_Adjustment\", Interest_Adj, subinstrumentid)\ncreateTransaction(posting_date, payment_date, \"Payment_UPB\", payment_principal, subinstrumentid)\ncreateTransaction(posting_date, payment_date, \"Payment_Interest\", Payment_interest, subinstrumentid)\ncreateTransaction(posting_date, posting_date, \"Servicing_Interest_Accrual\", InterestAccrual, subinstrumentid)",
+        "variables": [
+          {
+            "name": "BeginningUPB",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "BeginningAIR",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Payment_interest",
+            "source": "formula",
+            "formula": "min(payment_amount, BeginningAIR)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "payment_principal",
+            "source": "formula",
+            "formula": "max(payment_amount+Payment_interest, 0)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "InterestAccrual",
+            "source": "formula",
+            "formula": "((BeginningUPB+payment_principal)*interest_rate)/360",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "EndingUPB",
+            "source": "formula",
+            "formula": "BeginningUPB+payment_principal",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "EndingAIR",
+            "source": "formula",
+            "formula": "BeginningAIR+Payment_interest+InterestAccrual",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [
+          {
+            "condition": "eq(Replay_EndingUPB,0)",
+            "thenFormula": "0"
+          }
+        ],
+        "elseFormula": "subtract(Replay_EndingUPB,EndingUPB)",
+        "conditionResultVar": "Principal_Adj",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "type": "Principal_Adjustment",
+              "amount": "Principal_Adj",
+              "postingDate": "posting_date",
+              "effectiveDate": "posting_date",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "Interest_Adjustment",
+              "amount": "Interest_Adj",
+              "postingDate": "posting_date",
+              "effectiveDate": "posting_date",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "Payment_UPB",
+              "amount": "payment_principal",
+              "postingDate": "posting_date",
+              "effectiveDate": "payment_date",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "Payment_Interest",
+              "amount": "Payment_interest",
+              "postingDate": "posting_date",
+              "effectiveDate": "payment_date",
+              "subInstrumentId": "subinstrumentid"
+            },
+            {
+              "type": "Servicing_Interest_Accrual",
+              "amount": "InterestAccrual",
+              "postingDate": "posting_date",
+              "effectiveDate": "posting_date",
+              "subInstrumentId": "subinstrumentid"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "BeginningUPB",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "BeginningAIR",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Payment_interest",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "min(payment_amount, BeginningAIR)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "payment_principal",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "max(payment_amount+Payment_interest, 0)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "InterestAccrual",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "((BeginningUPB+payment_principal)*interest_rate)/360",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "EndingUPB",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "BeginningUPB+payment_principal",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "EndingAIR",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "BeginningAIR+Payment_interest+InterestAccrual",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Principal_Adj",
+            "stepType": "condition",
+            "conditions": [
+              {
+                "condition": "eq(Replay_EndingUPB,0)",
+                "thenFormula": "0"
+              }
+            ],
+            "elseFormula": "subtract(Replay_EndingUPB,EndingUPB)",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Interest_Adj",
+            "stepType": "condition",
+            "conditions": [
+              {
+                "condition": "eq(Replay_EndingAIR,0)",
+                "thenFormula": "0"
+              }
+            ],
+            "elseFormula": "subtract(Replay_EndingAIR,EndingAIR)",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      },
+      {
+        "name": "Step 2 - Schedule",
+        "priority": 2,
+        "ruleType": "schedule",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STEP 2 - SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\nreplay_remit = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_REMIT)\nposting_date = EOD.postingdate\nCurrent_Acc_Bal = EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL\nCurrent_UPB_Bal = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nreplay_date = REPLAY.effectivedate\npayment_date = TRANX.effectivedate\npayment_amount = if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)\neffective_date = EOD.effectivedate\nsubinstrumentid = EOD.subinstrumentid\ninterest_rate = EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100\ntimeline_list = array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)\nREPLAY_REP_RAYMENTUPB_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB)\nREPLAY_REP_SIA_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL)\n\n## Steps\ntimelinelist_count = count(timeline_list)\nprint(\"timelinelist_count =\", timelinelist_count)\n## Schedule\np = period(timelinelist_count, \"M\")\nBACKTRACK_SCHEDULE = schedule(p, {\n    \"date\": \"timeline_list\",\n    \"Accrual_Days\": \"days_between(lag('date',1,0),date)\",\n    \"Accrual_Amount\": \"REPLAY_REP_SIA_arr\",\n    \"days_accrual\": \"multiply(Accrual_Days,lag('Accrual_Amount',1,0))\"\n}, {\"timeline_list\": timeline_list, \"REPLAY_REP_SIA_arr\": REPLAY_REP_SIA_arr})\nprint(BACKTRACK_SCHEDULE)\ndays_accrual = schedule_sum(BACKTRACK_SCHEDULE, \"days_accrual\")\n\nreplay_air = subtract(Current_Acc_Bal,days_accrual)\nprint(\"replay_air =\", replay_air)\nreplay_upb = subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))\nprint(\"replay_upb =\", replay_upb)\n## Schedule\np = period(timelinelist_count, \"M\")\nSchedule = schedule(p, {\n    \"date\": \"timeline_list\",\n    \"days\": \"if(eq(period_index, 0),0,days_between(lag('date',1,0),date)-1)\",\n    \"Beg_UPB\": \"if(eq(period_index, 0), replay_upb, lag('End_UPB',1,0))\",\n    \"Beg_AIR\": \"if(eq(period_index, 0),replay_air,lag('End_AIR',1,0)+(lag('Accrual',1,0)*days))\",\n    \"Remit_am\": \"coalesce(replay_remit,0)\",\n    \"Int_Paid\": \"min(Remit_am,Beg_AIR)\",\n    \"Prin_Paid\": \"max(Remit_am-Int_Paid,0)\",\n    \"End_UPB\": \"subtract(Beg_UPB,Prin_Paid)\",\n    \"Accrual\": \"(interest_rate*End_UPB)/360\",\n    \"End_AIR\": \"Beg_AIR-Int_Paid+Accrual\"\n}, {\"timeline_list\": timeline_list, \"replay_upb\": replay_upb, \"replay_air\": replay_air, \"replay_remit\": replay_remit, \"interest_rate\": interest_rate})\nprint(Schedule)\nReplay_EndingUPB = schedule_last(Schedule, \"End_UPB\")\nReplay_EndingAIR = schedule_last(Schedule, \"End_AIR\")\n",
+        "variables": [
+          {
+            "name": "timelinelist_count",
+            "source": "formula",
+            "formula": "count(timeline_list)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "replay_air",
+            "source": "formula",
+            "formula": "subtract(Current_Acc_Bal,days_accrual)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "replay_upb",
+            "source": "formula",
+            "formula": "subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": false,
+          "transactions": []
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "timelinelist_count",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "count(timeline_list)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "BACKTRACK_SCHEDULE",
+            "stepType": "schedule",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true,
+            "scheduleConfig": {
+              "periodType": "number",
+              "startDate": "",
+              "startDateSource": "value",
+              "startDateField": "",
+              "startDateFormula": "",
+              "endDate": "",
+              "endDateSource": "value",
+              "endDateField": "",
+              "endDateFormula": "",
+              "periodCount": "12",
+              "periodCountSource": "formula",
+              "periodCountField": "",
+              "periodCountFormula": "timelinelist_count",
+              "frequency": "M",
+              "convention": "",
+              "columns": [
+                {
+                  "name": "date",
+                  "formula": "timeline_list"
+                },
+                {
+                  "name": "Accrual_Days",
+                  "formula": "days_between(lag('date',1,0),date)"
+                },
+                {
+                  "name": "Accrual_Amount",
+                  "formula": "REPLAY_REP_SIA_arr"
+                },
+                {
+                  "name": "days_accrual",
+                  "formula": "multiply(Accrual_Days,lag('Accrual_Amount',1,0))"
+                }
+              ],
+              "outputs": [
+                {
+                  "id": "o_1777098780329_xjpml",
+                  "type": "sum",
+                  "name": "days_accrual",
+                  "column": "days_accrual",
+                  "matchCol": "",
+                  "matchValue": ""
+                }
+              ],
+              "contextVars": [
+                "timeline_list",
+                "REPLAY_REP_SIA_arr"
+              ]
+            },
+            "outputVars": [
+              {
+                "name": "days_accrual",
+                "type": "sum",
+                "column": "days_accrual"
+              }
+            ]
+          },
+          {
+            "name": "replay_air",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "subtract(Current_Acc_Bal,days_accrual)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "replay_upb",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Schedule",
+            "stepType": "schedule",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true,
+            "scheduleConfig": {
+              "periodType": "number",
+              "startDate": "",
+              "startDateSource": "value",
+              "startDateField": "",
+              "startDateFormula": "",
+              "endDate": "",
+              "endDateSource": "value",
+              "endDateField": "",
+              "endDateFormula": "",
+              "periodCount": "12",
+              "periodCountSource": "formula",
+              "periodCountField": "",
+              "periodCountFormula": "timelinelist_count",
+              "frequency": "M",
+              "convention": "",
+              "columns": [
+                {
+                  "name": "date",
+                  "formula": "timeline_list"
+                },
+                {
+                  "name": "days",
+                  "formula": "if(eq(period_index, 0),0,days_between(lag('date',1,0),date)-1)"
+                },
+                {
+                  "name": "Beg_UPB",
+                  "formula": "if(eq(period_index, 0), replay_upb, lag('End_UPB',1,0))"
+                },
+                {
+                  "name": "Beg_AIR",
+                  "formula": "if(eq(period_index, 0),replay_air,lag('End_AIR',1,0)+(lag('Accrual',1,0)*days))"
+                },
+                {
+                  "name": "Remit_am",
+                  "formula": "coalesce(replay_remit,0)"
+                },
+                {
+                  "name": "Int_Paid",
+                  "formula": "min(Remit_am,Beg_AIR)"
+                },
+                {
+                  "name": "Prin_Paid",
+                  "formula": "max(Remit_am-Int_Paid,0)"
+                },
+                {
+                  "name": "End_UPB",
+                  "formula": "subtract(Beg_UPB,Prin_Paid)"
+                },
+                {
+                  "name": "Accrual",
+                  "formula": "(interest_rate*End_UPB)/360"
+                },
+                {
+                  "name": "End_AIR",
+                  "formula": "Beg_AIR-Int_Paid+Accrual"
+                }
+              ],
+              "outputs": [
+                {
+                  "id": "o_1777099252092_wtab0",
+                  "type": "last",
+                  "name": "Replay_EndingUPB",
+                  "column": "End_UPB",
+                  "matchCol": "",
+                  "matchValue": ""
+                },
+                {
+                  "id": "o_1777099270325_jskq2",
+                  "type": "last",
+                  "name": "Replay_EndingAIR",
+                  "column": "End_AIR",
+                  "matchCol": "",
+                  "matchValue": ""
+                }
+              ],
+              "contextVars": [
+                "timeline_list",
+                "replay_upb",
+                "replay_air",
+                "replay_remit",
+                "interest_rate"
+              ]
+            },
+            "outputVars": [
+              {
+                "name": "Replay_EndingUPB",
+                "type": "last",
+                "column": "End_UPB"
+              },
+              {
+                "name": "Replay_EndingAIR",
+                "type": "last",
+                "column": "End_AIR"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Step 1 - Parameters",
+        "priority": 1,
+        "ruleType": "simple_calc",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## STEP 1 - PARAMETERS\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\nreplay_remit = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_REMIT)\nprint(\"replay_remit =\", replay_remit)\nposting_date = EOD.postingdate\nprint(\"posting_date =\", posting_date)\nCurrent_Acc_Bal = EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL\nprint(\"Current_Acc_Bal =\", Current_Acc_Bal)\nCurrent_UPB_Bal = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"Current_UPB_Bal =\", Current_UPB_Bal)\nreplay_date = REPLAY.effectivedate\nprint(\"replay_date =\", replay_date)\npayment_date = TRANX.effectivedate\nprint(\"payment_date =\", payment_date)\npayment_amount = if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)\nprint(\"payment_amount =\", payment_amount)\neffective_date = EOD.effectivedate\nprint(\"effective_date =\", effective_date)\nsubinstrumentid = EOD.subinstrumentid\nprint(\"subinstrumentid =\", subinstrumentid)\ninterest_rate = EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100\nprint(\"interest_rate =\", interest_rate)\ntimeline_list = array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)\nprint(\"timeline_list =\", timeline_list)\nREPLAY_REP_RAYMENTUPB_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB)\nprint(\"REPLAY_REP_RAYMENTUPB_arr =\", REPLAY_REP_RAYMENTUPB_arr)\nREPLAY_REP_SIA_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL)\nprint(\"REPLAY_REP_SIA_arr =\", REPLAY_REP_SIA_arr)",
+        "variables": [
+          {
+            "name": "replay_remit",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_REMIT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "posting_date",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Current_Acc_Bal",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Current_UPB_Bal",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "replay_date",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "payment_date",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "TRANX.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "payment_amount",
+            "source": "formula",
+            "formula": "if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "effective_date",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "subinstrumentid",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "interest_rate",
+            "source": "formula",
+            "formula": "EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "timeline_list",
+            "source": "formula",
+            "formula": "array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "REPLAY_REP_RAYMENTUPB_arr",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "REPLAY_REP_SIA_arr",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": false,
+          "transactions": []
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "replay_remit",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_REMIT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "posting_date",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.postingdate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Current_Acc_Bal",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Current_UPB_Bal",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "replay_date",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "payment_date",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "TRANX.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "payment_amount",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "effective_date",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "subinstrumentid",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "EOD.subinstrumentid",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "interest_rate",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "timeline_list",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "REPLAY_REP_RAYMENTUPB_arr",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "REPLAY_REP_SIA_arr",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      }
+    ],
+    "schedules": [],
+    "combinedCode": "## ═══════════════════════════════════════════════════════════════\n## STEP 1 - PARAMETERS\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\nreplay_remit = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_REMIT)\nprint(\"replay_remit =\", replay_remit)\nposting_date = EOD.postingdate\nprint(\"posting_date =\", posting_date)\nCurrent_Acc_Bal = EOD.BALANCES_BEGINNINGBALANCE_SERVICING_INTEREST_ACCRUAL\nprint(\"Current_Acc_Bal =\", Current_Acc_Bal)\nCurrent_UPB_Bal = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"Current_UPB_Bal =\", Current_UPB_Bal)\nreplay_date = REPLAY.effectivedate\nprint(\"replay_date =\", replay_date)\npayment_date = TRANX.effectivedate\nprint(\"payment_date =\", payment_date)\npayment_amount = if(eq(payment_date,posting_date),TRANX.TRANSACTIONS_AMOUNT_REMIT,0)\nprint(\"payment_amount =\", payment_amount)\neffective_date = EOD.effectivedate\nprint(\"effective_date =\", effective_date)\nsubinstrumentid = EOD.subinstrumentid\nprint(\"subinstrumentid =\", subinstrumentid)\ninterest_rate = EOD.ATTRIBUTE_INTEREST_RATE_CURRENT/100\nprint(\"interest_rate =\", interest_rate)\ntimeline_list = array_append(collect_by_instrument(REPLAY.effectivedate),posting_date)\nprint(\"timeline_list =\", timeline_list)\nREPLAY_REP_RAYMENTUPB_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_PAYMENT_UPB)\nprint(\"REPLAY_REP_RAYMENTUPB_arr =\", REPLAY_REP_RAYMENTUPB_arr)\nREPLAY_REP_SIA_arr = collect_by_instrument(REPLAY.TRANSACTIONS_AMOUNT_SERVICING_INTEREST_ACCRUAL)\nprint(\"REPLAY_REP_SIA_arr =\", REPLAY_REP_SIA_arr)\n\n## ═══════════════════════════════════════════════════════════════\n## STEP 2 - SCHEDULE\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\ntimelinelist_count = count(timeline_list)\nprint(\"timelinelist_count =\", timelinelist_count)\n## Schedule\np = period(timelinelist_count, \"M\")\nBACKTRACK_SCHEDULE = schedule(p, {\n    \"date\": \"timeline_list\",\n    \"Accrual_Days\": \"days_between(lag('date',1,0),date)\",\n    \"Accrual_Amount\": \"REPLAY_REP_SIA_arr\",\n    \"days_accrual\": \"multiply(Accrual_Days,lag('Accrual_Amount',1,0))\"\n}, {\"timeline_list\": timeline_list, \"REPLAY_REP_SIA_arr\": REPLAY_REP_SIA_arr})\nprint(BACKTRACK_SCHEDULE)\ndays_accrual = schedule_sum(BACKTRACK_SCHEDULE, \"days_accrual\")\n\nreplay_air = subtract(Current_Acc_Bal,days_accrual)\nprint(\"replay_air =\", replay_air)\nreplay_upb = subtract(Current_UPB_Bal,sum(REPLAY_REP_RAYMENTUPB_arr))\nprint(\"replay_upb =\", replay_upb)\n## Schedule\np = period(timelinelist_count, \"M\")\nSchedule = schedule(p, {\n    \"date\": \"timeline_list\",\n    \"days\": \"if(eq(period_index, 0),0,days_between(lag('date',1,0),date)-1)\",\n    \"Beg_UPB\": \"if(eq(period_index, 0), replay_upb, lag('End_UPB',1,0))\",\n    \"Beg_AIR\": \"if(eq(period_index, 0),replay_air,lag('End_AIR',1,0)+(lag('Accrual',1,0)*days))\",\n    \"Remit_am\": \"coalesce(replay_remit,0)\",\n    \"Int_Paid\": \"min(Remit_am,Beg_AIR)\",\n    \"Prin_Paid\": \"max(Remit_am-Int_Paid,0)\",\n    \"End_UPB\": \"subtract(Beg_UPB,Prin_Paid)\",\n    \"Accrual\": \"(interest_rate*End_UPB)/360\",\n    \"End_AIR\": \"Beg_AIR-Int_Paid+Accrual\"\n}, {\"timeline_list\": timeline_list, \"replay_upb\": replay_upb, \"replay_air\": replay_air, \"replay_remit\": replay_remit, \"interest_rate\": interest_rate})\nprint(Schedule)\nReplay_EndingUPB = schedule_last(Schedule, \"End_UPB\")\nReplay_EndingAIR = schedule_last(Schedule, \"End_AIR\")\n\n\n## ═══════════════════════════════════════════════════════════════\n## STEP 3 - ACCRUAL\n## ═══════════════════════════════════════════════════════════════\n\n## Dependencies from saved rules\n## Steps\nBeginningUPB = EOD.BALANCES_BEGINNINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"BeginningUPB =\", BeginningUPB)\nBeginningAIR = EOD.BALANCES_BEGINNINGBALANCE_ACCRUED_INTEREST_RECEIVABLE\nprint(\"BeginningAIR =\", BeginningAIR)\nPayment_interest = min(payment_amount, BeginningAIR)*-1\nprint(\"Payment_interest =\", Payment_interest)\npayment_principal = max(payment_amount+Payment_interest, 0)*-1\nprint(\"payment_principal =\", payment_principal)\nInterestAccrual = ((BeginningUPB+payment_principal)*interest_rate)/360\nprint(\"InterestAccrual =\", InterestAccrual)\nEndingUPB = BeginningUPB+payment_principal\nprint(\"EndingUPB =\", EndingUPB)\nEndingAIR = BeginningAIR+Payment_interest+InterestAccrual\nprint(\"EndingAIR =\", EndingAIR)\n## Conditional Logic\nPrincipal_Adj = if(eq(Replay_EndingUPB,0), 0, subtract(Replay_EndingUPB,EndingUPB))\nprint(\"Principal_Adj =\", Principal_Adj)\n\n## Conditional Logic\nInterest_Adj = if(eq(Replay_EndingAIR,0), 0, subtract(Replay_EndingAIR,EndingAIR))\nprint(\"Interest_Adj =\", Interest_Adj)\n\n\n## Create Transactions\ncreateTransaction(posting_date, posting_date, \"Principal_Adjustment\", Principal_Adj, subinstrumentid)\ncreateTransaction(posting_date, posting_date, \"Interest_Adjustment\", Interest_Adj, subinstrumentid)\ncreateTransaction(posting_date, payment_date, \"Payment_UPB\", payment_principal, subinstrumentid)\ncreateTransaction(posting_date, payment_date, \"Payment_Interest\", Payment_interest, subinstrumentid)\ncreateTransaction(posting_date, posting_date, \"Servicing_Interest_Accrual\", InterestAccrual, subinstrumentid)",
+    "created_at": "2026-04-25T06:34:26.537845+00:00",
+    "updated_at": "2026-04-25T06:53:45.509680+00:00"
+  }
+}
