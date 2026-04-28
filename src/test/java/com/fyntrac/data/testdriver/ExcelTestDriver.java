@@ -374,7 +374,7 @@ public class ExcelTestDriver {
     }
 
     Model uploadDslModel(String modelFile) throws Exception {
-        String uri = String.format("%s/%s", dataLoaderURI, "model/upload-py-model");
+        String uri = String.format("%s/%s", dataLoaderURI, "model/upload-dsl-model");
 
         InputStream fileStream = this.readFile(modelFile);
 
