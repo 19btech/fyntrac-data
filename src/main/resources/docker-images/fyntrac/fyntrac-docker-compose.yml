@@ -249,7 +249,7 @@ services:
       - NODE_ENV=production
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:4000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
