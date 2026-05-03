@@ -37,10 +37,16 @@ log_info "Using version: $VERSION"
 get_container_name() {
   case "$1" in
     dataloader) echo "fyntrac-dataloader" ;;
-    model) echo "fyntrac-model" ;;
-    gl) echo "fyntrac-gl" ;;
-    reporting) echo "fyntrac-reporting" ;;
-    web) echo "fyntrac-web" ;;
+    model)      echo "fyntrac-model" ;;
+    dsl-model)  echo "fyntrac-dsl-model" ;;
+    dsl)        echo "fyntrac-dsl" ;;
+    dsl-ui)     echo "fyntrac-dsl-ui" ;;
+    insight)    echo "fyntrac-insight" ;;
+    insight-ui) echo "fyntrac-insight-ui" ;;
+    gl)         echo "fyntrac-gl" ;;
+    reporting)  echo "fyntrac-reporting" ;;
+    gateway)    echo "fyntrac-gateway" ;;
+    web)        echo "fyntrac-web" ;;
     *) echo "" ;;
   esac
 }
@@ -48,10 +54,16 @@ get_container_name() {
 get_image_name() {
   case "$1" in
     dataloader) echo "ghcr.io/19btech/fyntrac/docker/dataloader:${VERSION}" ;;
-    model) echo "ghcr.io/19btech/fyntrac/docker/model:${VERSION}" ;;
-    gl) echo "ghcr.io/19btech/fyntrac/docker/gl:${VERSION}" ;;
-    reporting) echo "ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}" ;;
-    web) echo "ghcr.io/19btech/fyntrac/docker/web:latest" ;;
+    model)      echo "ghcr.io/19btech/fyntrac/docker/model:${VERSION}" ;;
+    dsl-model)  echo "ghcr.io/19btech/fyntrac/docker/fyntrac-dsl-model:${VERSION}" ;;
+    dsl)        echo "ghcr.io/19btech/fyntrac/docker/fyntrac-dsl:${VERSION}" ;;
+    dsl-ui)     echo "ghcr.io/19btech/fyntrac/docker/fyntrac-dsl-ui:${VERSION}" ;;
+    insight)    echo "ghcr.io/19btech/fyntrac/docker/fyntrac-insight:${VERSION}" ;;
+    insight-ui) echo "ghcr.io/19btech/fyntrac/docker/fyntrac-insight-ui:${VERSION}" ;;
+    gl)         echo "ghcr.io/19btech/fyntrac/docker/gl:${VERSION}" ;;
+    reporting)  echo "ghcr.io/19btech/fyntrac/docker/reporting:${VERSION}" ;;
+    gateway)    echo "ghcr.io/19btech/fyntrac/docker/fyntrac-gateway:${VERSION}" ;;
+    web)        echo "ghcr.io/19btech/fyntrac/docker/web:${VERSION}" ;;
     *) echo "" ;;
   esac
 }
@@ -63,7 +75,7 @@ if [ "$#" -eq 0 ]; then
 fi
 
 if [ "$1" = "all" ]; then
-  components=("dataloader" "model" "gl" "reporting" "web")
+  components=("dataloader" "model" "dsl-model" "dsl" "dsl-ui" "insight" "insight-ui" "gl" "reporting" "gateway" "web")
 else
   components=()
   for arg in "$@"; do
