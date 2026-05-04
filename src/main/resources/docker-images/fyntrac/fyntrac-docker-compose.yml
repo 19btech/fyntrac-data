@@ -239,9 +239,9 @@ services:
       - "4000:4000"
     environment:
       # Metadata DB — <TENANT> replaced per-request with the tenant key (e.g. TNT001_INSIGHT)
-      - MONGODB_URI=mongodb://root:${MONGODB_PSWD:-R3s3rv#313}@mongodb:${MONGODB_PORT:-27017}/<TENANT>_INSIGHT?authSource=admin
+      - MONGODB_URI=mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:${MONGODB_PORT:-27017}/<TENANT>_INSIGHT?authSource=admin
       # Target financial data DB — <TENANT> replaced per-request (e.g. TNT001)
-      - TARGET_MONGODB_URI=mongodb://root:${MONGODB_PSWD:-R3s3rv#313}@mongodb:${MONGODB_PORT:-27017}/<TENANT>?authSource=admin
+      - TARGET_MONGODB_URI=mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:${MONGODB_PORT:-27017}/<TENANT>?authSource=admin
       # Tenant isolation: 'database' = each tenant has its own DB; no tenantId field filter needed
       - TENANT_ISOLATION=database
       - ZITADEL_ISSUER_URI=${ZITADEL_ISSUER_URI:-}
