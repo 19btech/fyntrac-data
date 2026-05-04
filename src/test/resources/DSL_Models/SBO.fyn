@@ -1,0 +1,413 @@
+{
+  "fyn_version": "1.0",
+  "type": "custom",
+  "exported_at": "2026-05-04T23:22:46.474Z",
+  "template": {
+    "name": "SBO",
+    "description": "SBO",
+    "category": "SBO",
+    "rules": [
+      {
+        "name": "SBO_Rules",
+        "priority": 1,
+        "ruleType": "simple_calc",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## SBO_RULES\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\nINT_ACC_postingdate = INT_ACC.postingdate\nprint(\"INT_ACC_postingdate =\", INT_ACC_postingdate)\nINT_ACC_effectivedate = INT_ACC.effectivedate\nprint(\"INT_ACC_effectivedate =\", INT_ACC_effectivedate)\nint_rate_current = INT_ACC.ATTRIBUTE_INTEREST_RATE_CURRENT\nprint(\"int_rate_current =\", int_rate_current)\nunpaid_principal_balance = INT_ACC.BALANCES_ENDINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"unpaid_principal_balance =\", unpaid_principal_balance)\naccrued_interest_receivable = INT_ACC.BALANCES_ENDINGBALANCE_ACCRUED_INTEREST_RECEIVABLE\nprint(\"accrued_interest_receivable =\", accrued_interest_receivable)\nservicing_interest_accrual = INT_ACC.BALANCES_ENDINGBALANCE_SERVICING_INTEREST_ACCRUAL\nprint(\"servicing_interest_accrual =\", servicing_interest_accrual)\nPMT_postingdate = PMT.postingdate\nprint(\"PMT_postingdate =\", PMT_postingdate)\nPMT_effectivedate = PMT.effectivedate\nprint(\"PMT_effectivedate =\", PMT_effectivedate)\npmt_remit = PMT.TRANSACTIONS_AMOUNT_REMIT\nprint(\"pmt_remit =\", pmt_remit)\nORG_postingdate = ORIG.postingdate\nprint(\"ORG_postingdate =\", ORG_postingdate)\nORG_effectivedate = ORIG.effectivedate\nprint(\"ORG_effectivedate =\", ORG_effectivedate)\nPurchase_upb = ORIG.ATTRIBUTE_LOAN_AMOUNT_CURRENT\nprint(\"Purchase_upb =\", Purchase_upb)\nPurchase_air = ORIG.ATTRIBUTE_INTEREST_RECEIVABLE_CONSUMER_CURRENT\nprint(\"Purchase_air =\", Purchase_air)\nSub = INT_ACC.subinstrumentid\nprint(\"Sub =\", Sub)\nPayment_interest = min(pmt_remit, accrued_interest_receivable)*-1\nprint(\"Payment_interest =\", Payment_interest)\npayment_principal = max(pmt_remit+Payment_interest, 0)*-1\nprint(\"payment_principal =\", payment_principal)\nInterestAccrual = ((unpaid_principal_balance+payment_principal)*int_rate_current)/36000\nprint(\"InterestAccrual =\", InterestAccrual)\n\n## Create Transactions\ncreateTransaction(ORIG.postingdate, ORIG.effectivedate, \"PURCHASE_UPB\", Purchase_upb, 1.0)\ncreateTransaction(ORIG.postingdate, ORIG.effectivedate, \"PURCHASE_INTEREST\", Purchase_air, 1.0)\ncreateTransaction(PMT.postingdate, PMT.effectivedate, \"PAYMENT_INTEREST\", Payment_interest, 1.0)\ncreateTransaction(PMT.postingdate, PMT.effectivedate, \"PAYMENT_UPB\", payment_principal, 1.0)\ncreateTransaction(INT_ACC.postingdate, INT_ACC.effectivedate, \"SERVICING_INTEREST_ACCRUAL\", InterestAccrual, 1.0)",
+        "variables": [
+          {
+            "name": "INT_ACC_postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "INT_ACC_effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "int_rate_current",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.ATTRIBUTE_INTEREST_RATE_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "unpaid_principal_balance",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "accrued_interest_receivable",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_ACCRUED_INTEREST_RECEIVABLE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "servicing_interest_accrual",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "PMT_postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "PMT_effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pmt_remit",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.TRANSACTIONS_AMOUNT_REMIT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "ORG_postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "ORG_effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Purchase_upb",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.ATTRIBUTE_LOAN_AMOUNT_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Purchase_air",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.ATTRIBUTE_INTEREST_RECEIVABLE_CONSUMER_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Sub",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "Payment_interest",
+            "source": "formula",
+            "formula": "min(pmt_remit, accrued_interest_receivable)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "payment_principal",
+            "source": "formula",
+            "formula": "max(pmt_remit+Payment_interest, 0)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "InterestAccrual",
+            "source": "formula",
+            "formula": "((unpaid_principal_balance+payment_principal)*int_rate_current)/36000",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "type": "PURCHASE_UPB",
+              "amount": "Purchase_upb",
+              "postingDate": "ORIG.postingdate",
+              "effectiveDate": "ORIG.effectivedate",
+              "subInstrumentId": "1.0"
+            },
+            {
+              "type": "PURCHASE_INTEREST",
+              "amount": "Purchase_air",
+              "postingDate": "ORIG.postingdate",
+              "effectiveDate": "ORIG.effectivedate",
+              "subInstrumentId": "1.0"
+            },
+            {
+              "type": "PAYMENT_INTEREST",
+              "amount": "Payment_interest",
+              "postingDate": "PMT.postingdate",
+              "effectiveDate": "PMT.effectivedate",
+              "subInstrumentId": "1.0"
+            },
+            {
+              "type": "PAYMENT_UPB",
+              "amount": "payment_principal",
+              "postingDate": "PMT.postingdate",
+              "effectiveDate": "PMT.effectivedate",
+              "subInstrumentId": "1.0"
+            },
+            {
+              "type": "SERVICING_INTEREST_ACCRUAL",
+              "amount": "InterestAccrual",
+              "postingDate": "INT_ACC.postingdate",
+              "effectiveDate": "INT_ACC.effectivedate",
+              "subInstrumentId": "1.0"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "name": "INT_ACC_postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.postingdate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "INT_ACC_effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "int_rate_current",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.ATTRIBUTE_INTEREST_RATE_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "unpaid_principal_balance",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_UNPAID_PRINCIPAL_BALANCE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "accrued_interest_receivable",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_ACCRUED_INTEREST_RECEIVABLE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "servicing_interest_accrual",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.BALANCES_ENDINGBALANCE_SERVICING_INTEREST_ACCRUAL",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "PMT_postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.postingdate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "PMT_effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "pmt_remit",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PMT.TRANSACTIONS_AMOUNT_REMIT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "ORG_postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.postingdate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "ORG_effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.effectivedate",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Purchase_upb",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.ATTRIBUTE_LOAN_AMOUNT_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Purchase_air",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "ORIG.ATTRIBUTE_INTEREST_RECEIVABLE_CONSUMER_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Sub",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "INT_ACC.subinstrumentid",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "Payment_interest",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "min(pmt_remit, accrued_interest_receivable)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "payment_principal",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "max(pmt_remit+Payment_interest, 0)*-1",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "name": "InterestAccrual",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "((unpaid_principal_balance+payment_principal)*int_rate_current)/36000",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          }
+        ]
+      }
+    ],
+    "schedules": [],
+    "combinedCode": "## ═══════════════════════════════════════════════════════════════\n## SBO_RULES\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\nINT_ACC_postingdate = INT_ACC.postingdate\nprint(\"INT_ACC_postingdate =\", INT_ACC_postingdate)\nINT_ACC_effectivedate = INT_ACC.effectivedate\nprint(\"INT_ACC_effectivedate =\", INT_ACC_effectivedate)\nint_rate_current = INT_ACC.ATTRIBUTE_INTEREST_RATE_CURRENT\nprint(\"int_rate_current =\", int_rate_current)\nunpaid_principal_balance = INT_ACC.BALANCES_ENDINGBALANCE_UNPAID_PRINCIPAL_BALANCE\nprint(\"unpaid_principal_balance =\", unpaid_principal_balance)\naccrued_interest_receivable = INT_ACC.BALANCES_ENDINGBALANCE_ACCRUED_INTEREST_RECEIVABLE\nprint(\"accrued_interest_receivable =\", accrued_interest_receivable)\nservicing_interest_accrual = INT_ACC.BALANCES_ENDINGBALANCE_SERVICING_INTEREST_ACCRUAL\nprint(\"servicing_interest_accrual =\", servicing_interest_accrual)\nPMT_postingdate = PMT.postingdate\nprint(\"PMT_postingdate =\", PMT_postingdate)\nPMT_effectivedate = PMT.effectivedate\nprint(\"PMT_effectivedate =\", PMT_effectivedate)\npmt_remit = PMT.TRANSACTIONS_AMOUNT_REMIT\nprint(\"pmt_remit =\", pmt_remit)\nORG_postingdate = ORIG.postingdate\nprint(\"ORG_postingdate =\", ORG_postingdate)\nORG_effectivedate = ORIG.effectivedate\nprint(\"ORG_effectivedate =\", ORG_effectivedate)\nPurchase_upb = ORIG.ATTRIBUTE_LOAN_AMOUNT_CURRENT\nprint(\"Purchase_upb =\", Purchase_upb)\nPurchase_air = ORIG.ATTRIBUTE_INTEREST_RECEIVABLE_CONSUMER_CURRENT\nprint(\"Purchase_air =\", Purchase_air)\nSub = INT_ACC.subinstrumentid\nprint(\"Sub =\", Sub)\nPayment_interest = min(pmt_remit, accrued_interest_receivable)*-1\nprint(\"Payment_interest =\", Payment_interest)\npayment_principal = max(pmt_remit+Payment_interest, 0)*-1\nprint(\"payment_principal =\", payment_principal)\nInterestAccrual = ((unpaid_principal_balance+payment_principal)*int_rate_current)/36000\nprint(\"InterestAccrual =\", InterestAccrual)\n\n## Create Transactions\ncreateTransaction(ORIG.postingdate, ORIG.effectivedate, \"PURCHASE_UPB\", Purchase_upb, 1.0)\ncreateTransaction(ORIG.postingdate, ORIG.effectivedate, \"PURCHASE_INTEREST\", Purchase_air, 1.0)\ncreateTransaction(PMT.postingdate, PMT.effectivedate, \"PAYMENT_INTEREST\", Payment_interest, 1.0)\ncreateTransaction(PMT.postingdate, PMT.effectivedate, \"PAYMENT_UPB\", payment_principal, 1.0)\ncreateTransaction(INT_ACC.postingdate, INT_ACC.effectivedate, \"SERVICING_INTEREST_ACCRUAL\", InterestAccrual, 1.0)",
+    "created_at": "2026-05-04T23:22:31.188028+00:00",
+    "updated_at": "2026-05-04T23:22:31.188028+00:00"
+  }
+}
