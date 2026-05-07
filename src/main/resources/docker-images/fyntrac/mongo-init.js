@@ -1,135 +1,147 @@
-// Switch DB
+// ============================================
+// DB SWITCH
+// ============================================
 db = db.getSiblingDB('master');
 
-print("⚠️ Cleaning existing data...");
+print("⚠️ Starting cleanup...");
 
-// ------------------------------
-// Cleanup Collections
-// ------------------------------
+// ============================================
+// CLEANUP
+// ============================================
 db.users.deleteMany({});
 db.tenants.deleteMany({});
 db.merchants.deleteMany({});
 
-print("✅ Collections cleaned");
+print("✅ All collections cleaned");
 
-// ------------------------------
-// Merchant
-// ------------------------------
+// ============================================
+// MERCHANT SETUP
+// ============================================
 const MERCHANT_ID = ObjectId("67171f54dcbd9e7e9a527001");
 
 db.merchants.insertOne({
     _id: MERCHANT_ID,
     merchantCode: "MRC001",
     name: "Fyntrac Global",
-    description: "Leading financial platform for multi-tenant services",
-    industryType: "FinTech",
-    contactEmail: "support@fyntrac.com",
-    contactPhone: "+92-300-1234567",
-    address: {
-        street: "123 Financial Avenue",
-        city: "Karachi",
-        state: "Sindh",
-        postalCode: "75500",
-        country: "Pakistan"
-    },
     status: "ACTIVE",
     createdAt: new Date(),
     updatedAt: new Date()
 });
 
-// ------------------------------
-// Users + Tenants Definition
-// ------------------------------
+print("✅ Merchant inserted");
+
+// ============================================
+// USERS CONFIG
+// ============================================
 const USERS = [
     {
         _id: ObjectId("67171f54dcbd9e7e9a527801"),
-        username: "Rafay",
-        email: "rahmed@19btech.com",
-        tenantIds: [
-            ObjectId("700000000000000000000001"),
-            ObjectId("700000000000000000000002"),
-            ObjectId("700000000000000000000003")
-        ]
+        username: "rahmed",
+        firstName: "Rafay",
+        lastName: "Ahmed",
+        email: "rahmed@19btech.com"
     },
     {
         _id: ObjectId("67171f54dcbd9e7e9a527802"),
-        username: "Urooj",
-        email: "uabbas@19btech.com",
-        tenantIds: [
-            ObjectId("700000000000000000000004"),
-            ObjectId("700000000000000000000005"),
-            ObjectId("700000000000000000000006")
-        ]
+        username: "uabbas",
+        firstName: "Urooj",
+        lastName: "Abbas",
+        email: "uabbas@19btech.com"
     },
     {
         _id: ObjectId("67171f54dcbd9e7e9a527803"),
-        username: "Jaffar",
-        email: "ajaffar@19btech.com",
-        tenantIds: [
-            ObjectId("700000000000000000000007"),
-            ObjectId("700000000000000000000008"),
-            ObjectId("700000000000000000000009")
-        ]
+        username: "ajaffar",
+        firstName: "Ali",
+        lastName: "Jaffar",
+        email: "ajaffar@19btech.com"
     },
     {
         _id: ObjectId("67171f54dcbd9e7e9a527804"),
-        username: "Raheel",
-        email: "raheelhassan3615@gmail.com",
-        tenantIds: [
-            ObjectId("700000000000000000000010"),
-            ObjectId("700000000000000000000011"),
-            ObjectId("700000000000000000000012")
-        ]
+        username: "rhassan",
+        firstName: "Raheel",
+        lastName: "Hassan",
+        email: "raheelhassan3615@gmail.com"
     },
     {
         _id: ObjectId("67171f54dcbd9e7e9a527805"),
-        username: "Behram",
-        email: "BehramHkhan@gmail.com",
-        tenantIds: [
-            ObjectId("700000000000000000000013"),
-            ObjectId("700000000000000000000014"),
-            ObjectId("700000000000000000000015")
-        ]
+        username: "bkhan",
+        firstName: "Behram",
+        lastName: "Khan",
+        email: "BehramHkhan@gmail.com"
     }
 ];
 
-// ------------------------------
-// Insert Tenants (Isolated)
-// ------------------------------
-print("🚀 Inserting tenants...");
+// ============================================
+// TENANT GENERATION LOGIC
+// ============================================
+let tenantCounter = 1;
+
+function generateTenantId(counter) {
+    return ObjectId(
+        "7" + counter.toString().padStart(23, "0")
+    );
+}
+
+print("🚀 Generating tenants...");
 
 USERS.forEach(user => {
-    user.tenantIds.forEach((tenantId, index) => {
+    user.tenantIds = [];
+
+    for (let i = 1; i <= 3; i++) {
+        const tenantId = generateTenantId(tenantCounter++);
+
+        user.tenantIds.push(tenantId);
+
         db.tenants.insertOne({
             _id: tenantId,
-            tenantCode: `TNT_${user.username.toUpperCase()}_${index + 1}`,
-            name: `${user.username} Tenant ${index + 1}`,
+            tenantCode: `TNT_${user.username.toUpperCase()}_${i}`,
+            name: `${user.firstName} ${user.lastName} Tenant ${i}`,
             merchantId: MERCHANT_ID,
-            userIds: [user._id], // strict isolation
+            userIds: [user._id],
             status: "ACTIVE",
             createdAt: new Date(),
             updatedAt: new Date()
         });
-    });
+    }
 });
 
-// ------------------------------
-// Insert Users
-// ------------------------------
+print("✅ Tenants inserted");
+
+// ============================================
+// INSERT USERS
+// ============================================
 print("🚀 Inserting users...");
 
 USERS.forEach(user => {
     db.users.insertOne({
         _id: user._id,
         username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        fullName: `${user.firstName} ${user.lastName}`,
         email: user.email,
         tenantIds: user.tenantIds,
         merchantId: MERCHANT_ID,
-        roles: [{ name: "ADMIN" }],
+        roles: [
+            {
+                name: "ADMIN"
+            }
+        ],
         active: true,
         createdAt: new Date(),
         updatedAt: new Date()
     });
 });
 
-print("✅ Cleanup + fresh isolated data inserted successfully!");
+print("✅ Users inserted");
+
+// ============================================
+// SUMMARY OUTPUT
+// ============================================
+print("🎉 SUCCESS: Database reset + seeded");
+
+print("--------------------------------------------------");
+print("Users Created: " + USERS.length);
+print("Tenants Created: " + (USERS.length * 3));
+print("Each user has 3 isolated tenants");
+print("--------------------------------------------------");
