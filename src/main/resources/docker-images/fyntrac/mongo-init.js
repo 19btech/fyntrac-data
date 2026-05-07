@@ -1,204 +1,135 @@
-// Switch to master DB
+// Switch DB
 db = db.getSiblingDB('master');
 
-// ------------------------------
-// Merchant Collection
-// ------------------------------
-if (!db.getCollectionNames().includes('merchants')) {
-    db.createCollection('merchants');
-}
+print("⚠️ Cleaning existing data...");
 
-db.merchants.updateOne(
-    { _id: ObjectId("67171f54dcbd9e7e9a527001") },
+// ------------------------------
+// Cleanup Collections
+// ------------------------------
+db.users.deleteMany({});
+db.tenants.deleteMany({});
+db.merchants.deleteMany({});
+
+print("✅ Collections cleaned");
+
+// ------------------------------
+// Merchant
+// ------------------------------
+const MERCHANT_ID = ObjectId("67171f54dcbd9e7e9a527001");
+
+db.merchants.insertOne({
+    _id: MERCHANT_ID,
+    merchantCode: "MRC001",
+    name: "Fyntrac Global",
+    description: "Leading financial platform for multi-tenant services",
+    industryType: "FinTech",
+    contactEmail: "support@fyntrac.com",
+    contactPhone: "+92-300-1234567",
+    address: {
+        street: "123 Financial Avenue",
+        city: "Karachi",
+        state: "Sindh",
+        postalCode: "75500",
+        country: "Pakistan"
+    },
+    status: "ACTIVE",
+    createdAt: new Date(),
+    updatedAt: new Date()
+});
+
+// ------------------------------
+// Users + Tenants Definition
+// ------------------------------
+const USERS = [
     {
-        $set: {
-            merchantCode: "MRC001",
-            name: "Fyntrac Global",
-            description: "Leading financial platform for multi-tenant services",
-            industryType: "FinTech",
-            contactEmail: "support@fyntrac.com",
-            contactPhone: "+92-300-1234567",
-            address: {
-                street: "123 Financial Avenue",
-                city: "Karachi",
-                state: "Sindh",
-                postalCode: "75500",
-                country: "Pakistan"
-            },
-            tenantIds: [
-                ObjectId("67171f54dcbd9e7e9a52768f"),
-                ObjectId("67171f8adcbd9e7e9a527690"),
-                ObjectId("687ee8c4fcbb23ffa95b4ad3")
-            ],
+        _id: ObjectId("67171f54dcbd9e7e9a527801"),
+        username: "Rafay",
+        email: "rahmed@19btech.com",
+        tenantIds: [
+            ObjectId("700000000000000000000001"),
+            ObjectId("700000000000000000000002"),
+            ObjectId("700000000000000000000003")
+        ]
+    },
+    {
+        _id: ObjectId("67171f54dcbd9e7e9a527802"),
+        username: "Urooj",
+        email: "uabbas@19btech.com",
+        tenantIds: [
+            ObjectId("700000000000000000000004"),
+            ObjectId("700000000000000000000005"),
+            ObjectId("700000000000000000000006")
+        ]
+    },
+    {
+        _id: ObjectId("67171f54dcbd9e7e9a527803"),
+        username: "Jaffar",
+        email: "ajaffar@19btech.com",
+        tenantIds: [
+            ObjectId("700000000000000000000007"),
+            ObjectId("700000000000000000000008"),
+            ObjectId("700000000000000000000009")
+        ]
+    },
+    {
+        _id: ObjectId("67171f54dcbd9e7e9a527804"),
+        username: "Raheel",
+        email: "raheelhassan3615@gmail.com",
+        tenantIds: [
+            ObjectId("700000000000000000000010"),
+            ObjectId("700000000000000000000011"),
+            ObjectId("700000000000000000000012")
+        ]
+    },
+    {
+        _id: ObjectId("67171f54dcbd9e7e9a527805"),
+        username: "Behram",
+        email: "BehramHkhan@gmail.com",
+        tenantIds: [
+            ObjectId("700000000000000000000013"),
+            ObjectId("700000000000000000000014"),
+            ObjectId("700000000000000000000015")
+        ]
+    }
+];
+
+// ------------------------------
+// Insert Tenants (Isolated)
+// ------------------------------
+print("🚀 Inserting tenants...");
+
+USERS.forEach(user => {
+    user.tenantIds.forEach((tenantId, index) => {
+        db.tenants.insertOne({
+            _id: tenantId,
+            tenantCode: `TNT_${user.username.toUpperCase()}_${index + 1}`,
+            name: `${user.username} Tenant ${index + 1}`,
+            merchantId: MERCHANT_ID,
+            userIds: [user._id], // strict isolation
             status: "ACTIVE",
-            createdAt: ISODate("2024-10-01T00:00:00Z"),
-            updatedAt: ISODate("2024-10-01T00:00:00Z")
-        }
-    },
-    { upsert: true }
-);
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+    });
+});
 
 // ------------------------------
-// Tenant Collection
+// Insert Users
 // ------------------------------
-if (!db.getCollectionNames().includes('tenants')) {
-    db.createCollection('tenants');
-}
+print("🚀 Inserting users...");
 
-db.tenants.updateOne(
-    { _id: ObjectId("67171f54dcbd9e7e9a52768f") },
-    {
-        $set: {
-            tenantCode: "TNT001",
-            name: "Tenant One",
-            description: "Main production tenant",
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            timezone: "Asia/Karachi",
-            currency: "PKR",
-            locale: "en_PK",
-            userIds: [
-                ObjectId("67171f54dcbd9e7e9a527801"),
-                ObjectId("67171f54dcbd9e7e9a527802")
-            ],
-            status: "ACTIVE",
-            createdAt: ISODate("2024-10-02T00:00:00Z"),
-            updatedAt: ISODate("2024-10-02T00:00:00Z")
-        }
-    },
-    { upsert: true }
-);
+USERS.forEach(user => {
+    db.users.insertOne({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        tenantIds: user.tenantIds,
+        merchantId: MERCHANT_ID,
+        roles: [{ name: "ADMIN" }],
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    });
+});
 
-db.tenants.updateOne(
-    { _id: ObjectId("67171f8adcbd9e7e9a527690") },
-    {
-        $set: {
-            tenantCode: "TNT002",
-            name: "Tenant Two",
-            description: "Secondary tenant for staging environment",
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            timezone: "Asia/Dubai",
-            currency: "AED",
-            locale: "en_AE",
-            userIds: [
-                ObjectId("67171f54dcbd9e7e9a527802"),
-                ObjectId("67171f54dcbd9e7e9a527803")
-            ],
-            status: "TEST",
-            createdAt: ISODate("2024-10-03T00:00:00Z"),
-            updatedAt: ISODate("2024-10-03T00:00:00Z")
-        }
-    },
-    { upsert: true }
-);
-
-db.tenants.updateOne(
-    { _id: ObjectId("687ee8c4fcbb23ffa95b4ad3") },
-    {
-        $set: {
-            tenantCode: "TNT003",
-            name: "Tenant Three",
-            description: "Internal test tenant",
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            timezone: "Asia/Karachi",
-            currency: "USD",
-            locale: "en_US",
-            userIds: [
-                ObjectId("67171f54dcbd9e7e9a527803")
-            ],
-            status: "DISABLED",
-            createdAt: ISODate("2024-10-05T00:00:00Z"),
-            updatedAt: ISODate("2024-10-05T00:00:00Z")
-        }
-    },
-    { upsert: true }
-);
-
-// ------------------------------
-// User Collection
-// ------------------------------
-if (!db.getCollectionNames().includes('users')) {
-    db.createCollection('users');
-}
-
-db.users.updateOne(
-    { _id: ObjectId("67171f54dcbd9e7e9a527801") },
-    {
-        $set: {
-            username: "rahmed",
-            email: "rahmed@19btech.com",
-            passwordHash: "hashed-password-1",
-            firstName: "Rafay",
-            lastName: "Ahmed",
-            phoneNumber: "+92-300-9876543",
-            tenantIds: [ ObjectId("67171f54dcbd9e7e9a52768f") ],
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            roles: [
-                { name: "ADMIN", description: "Full system access" }
-            ],
-            verified: true,
-            active: true,
-            lastLoginAt: ISODate("2024-10-05T10:00:00Z"),
-            createdAt: ISODate("2024-10-01T00:00:00Z"),
-            updatedAt: ISODate("2024-10-05T10:00:00Z")
-        }
-    },
-    { upsert: true }
-);
-
-db.users.updateOne(
-    { _id: ObjectId("67171f54dcbd9e7e9a527802") },
-    {
-        $set: {
-            username: "uabbas",
-            email: "uabbas@19btech.com",
-            passwordHash: "hashed-password-2",
-            firstName: "Urooj",
-            lastName: "Abbas",
-            phoneNumber: "+971-55-1234567",
-            tenantIds: [
-                ObjectId("67171f54dcbd9e7e9a52768f"),
-                ObjectId("67171f8adcbd9e7e9a527690")
-            ],
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            roles: [
-                { name: "MANAGER", description: "Tenant operations manager" }
-            ],
-            verified: true,
-            active: true,
-            lastLoginAt: ISODate("2024-10-06T09:00:00Z"),
-            createdAt: ISODate("2024-10-02T00:00:00Z"),
-            updatedAt: ISODate("2024-10-06T09:00:00Z")
-        }
-    },
-    { upsert: true }
-);
-
-db.users.updateOne(
-    { _id: ObjectId("67171f54dcbd9e7e9a527803") },
-    {
-        $set: {
-            username: "ajaffar",
-            email: "ajaffar@19btech.com",
-            passwordHash: "hashed-password-3",
-            firstName: "Ali",
-            lastName: "Jaffar",
-            phoneNumber: "+92-333-8889999",
-            tenantIds: [
-                ObjectId("67171f8adcbd9e7e9a527690"),
-                ObjectId("687ee8c4fcbb23ffa95b4ad3")
-            ],
-            merchantId: ObjectId("67171f54dcbd9e7e9a527001"),
-            roles: [
-                { name: "AUDITOR", description: "Read-only access" }
-            ],
-            verified: false,
-            active: true,
-            lastLoginAt: ISODate("2024-10-04T09:30:00Z"),
-            createdAt: ISODate("2024-10-03T00:00:00Z"),
-            updatedAt: ISODate("2024-10-04T09:30:00Z")
-        }
-    },
-    { upsert: true }
-);
-
-print("✅ Test data for Merchant, Tenant, and User inserted successfully!");
+print("✅ Cleanup + fresh isolated data inserted successfully!");
