@@ -61,7 +61,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      MONGODB_HOST: ${MONGODB_HOST:-mongodb}
+      MONGODB_HOST: ${DSL_MODEL_MONGODB_HOST:-mongodb}
       MONGODB_PORT: ${MONGODB_PORT:-27017}
       MONGODB_USERNAME: ${MONGODB_USERNAME:-root}
       MONGODB_PASSWORD: ${MONGODB_PSWD:-R3s3rv#313}
