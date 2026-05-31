@@ -13,6 +13,17 @@ services:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro  # Assumes init script exists in current dir
     ports:
       - "27017:27017"
+    
+    # 1. FIX: Raise the file descriptor limits to allow more than 409 connections
+    ulimits:
+      nofile:
+        soft: 64000
+        hard: 64000
+
+    # 2. OPTIONAL BUT RECOMMENDED: Limit WiredTiger cache so it doesn't fight your VM's RAM
+    # Adjust the GB value based on your VM's total available memory (e.g., 1G or 2G)
+    command: mongod --wiredTigerCacheSizeGB 1.5
+
     healthcheck:
       test: ["CMD", "mongosh", "-u", "root", "-p", "R3s3rv#313", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -22,6 +33,13 @@ services:
     networks:
       - fyntrac-network
     restart: unless-stopped  # Added for resilience (matches your Pulsar setup)
+
+volumes:
+  mongodb-data:
+
+networks:
+  fyntrac-network:
+    external: true # Or leave as default if managed within this file
 
   memcached:
     image: memcached:1.6.18-alpine  # Pinned version (Alpine for smaller size)
