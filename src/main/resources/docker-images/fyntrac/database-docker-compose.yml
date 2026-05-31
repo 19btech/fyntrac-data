@@ -1,8 +1,8 @@
-version: '3.8'  # Explicit version for compatibility (supports healthchecks, networks, etc.)
+version: '3.8' # Explicit version for compatibility (supports healthchecks, networks, etc.)
 
 services:
   mongodb:
-    image: mongo:8.2  # Pinned version instead of latest
+    image: mongo:8.2 # Pinned version instead of latest
     container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -10,7 +10,7 @@ services:
       MONGO_INITDB_DATABASE: master
     volumes:
       - mongodb-data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro  # Assumes init script exists in current dir
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro # Assumes init script exists in current dir
     ports:
       - "27017:27017"
     
@@ -21,7 +21,6 @@ services:
         hard: 64000
 
     # 2. OPTIONAL BUT RECOMMENDED: Limit WiredTiger cache so it doesn't fight your VM's RAM
-    # Adjust the GB value based on your VM's total available memory (e.g., 1G or 2G)
     command: mongod --wiredTigerCacheSizeGB 1.5
 
     healthcheck:
@@ -29,27 +28,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s  # Give MongoDB time to initialize (optional but recommended)
+      start_period: 30s # Give MongoDB time to initialize (optional but recommended)
     networks:
       - fyntrac-network
-    restart: unless-stopped  # Added for resilience (matches your Pulsar setup)
-
-volumes:
-  mongodb-data:
-
-networks:
-  fyntrac-network:
-    external: true # Or leave as default if managed within this file
+    restart: unless-stopped # Added for resilience (matches your Pulsar setup)
 
   memcached:
-    image: memcached:1.6.18-alpine  # Pinned version (Alpine for smaller size)
+    image: memcached:1.6.18-alpine # Pinned version (Alpine for smaller size)
     container_name: memcached
     ports:
       - "11211:11211"
-    # depends_on:  # Uncomment if you need Memcached to wait for MongoDB (e.g., app sequencing)
-    #   mongodb:
-    #     condition: service_healthy
-    healthcheck:  # Added simple healthcheck for consistency
+    healthcheck: # Added simple healthcheck for consistency
       test: ["CMD", "nc", "-z", "localhost", "11211"]
       interval: 10s
       timeout: 5s
@@ -57,12 +46,11 @@ networks:
       start_period: 5s
     networks:
       - fyntrac-network
-    restart: unless-stopped  # Added for resilience
+    restart: unless-stopped # Added for resilience
+
+volumes:
+  mongodb-data: # Named volume for MongoDB persistence (local driver by default)
 
 networks:
   fyntrac-network:
-    driver: bridge
-    external: true  # Connects to the existing manually created network (from previous fix)
-
-volumes:
-  mongodb-data:  # Named volume for MongoDB persistence (local driver by default)
+    external: true # Connects to the existing manually created network (from previous fix)
