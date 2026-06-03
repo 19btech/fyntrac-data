@@ -155,7 +155,10 @@ public class ExcelTestDriver {
             } else if (testStep == TestStep.ACTIVITY_UPLOAD) {
                 //Upload Activity method
                 loadData(step.input());
-            } else if (testStep == TestStep.MODEL_UPLOAD) {
+            } else if (testStep == TestStep.ACTIVITY_UPLOAD_OVERWRITE) {
+                //Upload Activity method
+                loadDataOverwrite(step.input());
+            }  else if (testStep == TestStep.MODEL_UPLOAD) {
                 model = uploadModel(step.input());
             } else if(testStep == TestStep.EVENT_CONFIGURATION) {
                 loadEventCofiguration(step.input());
@@ -249,7 +252,16 @@ public class ExcelTestDriver {
         String[] fileNames = new String[1];
         streams[0] = fileStream;
         fileNames[0] = "dataFile.xlsx";
-        uploadFiles(streams, fileNames);
+        uploadFiles(streams, fileNames, "accounting/rule/upload");
+    }
+
+    private void loadDataOverwrite(String dataFile) throws IOException {
+        InputStream fileStream = this.readFile(dataFile);
+        InputStream[] streams = new InputStream[1];
+        String[] fileNames = new String[1];
+        streams[0] = fileStream;
+        fileNames[0] = "dataFile.xlsx";
+        uploadFiles(streams, fileNames, "accounting/rule/upload-overwrite");
     }
 
     private void loadCustomData(String dataFile) throws IOException {
@@ -283,7 +295,7 @@ public class ExcelTestDriver {
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
-    private void uploadFiles(InputStream[] streams, String[] filenames) {
+    private void uploadFiles(InputStream[] streams, String[] filenames, String endPoint) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set("X-Tenant", tenantId); // optional if you need tenant info
@@ -296,7 +308,7 @@ public class ExcelTestDriver {
         }
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-        String uri = String.format("%s/%s", dataLoaderURI,"accounting/rule/upload");
+        String uri = String.format("%s/%s", dataLoaderURI,endPoint);
         ResponseEntity<String> response = restTemplate.postForEntity(uri, requestEntity, String.class);
 
         Assertions.assertEquals(200, response.getStatusCodeValue(), "File upload failed");
