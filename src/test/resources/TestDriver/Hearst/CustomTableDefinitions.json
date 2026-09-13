@@ -1,0 +1,167 @@
+[{
+  "_id": {
+    "$oid": "6aa53e235d974c3761465909"
+  },
+  "tableName": "Accounting_Policy",
+  "description": "To define recognition method and SSP",
+  "tableType": "REFERENCE",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "product_code",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 0
+    },
+    {
+      "userField": "USERFIELD2",
+      "columnName": "recognition_method",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 1
+    },
+    {
+      "userField": "USERFIELD3",
+      "columnName": "ssp_amount",
+      "dataType": "NUMBER",
+      "nullable": true,
+      "displayOrder": 2
+    },
+    {
+      "userField": "USERFIELD4",
+      "columnName": "standalone_price_policy",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 3
+    }
+  ],
+  "primaryKeys": [
+    "product_code"
+  ],
+  "referenceColumn": "recognition_method",
+  "referenceTable": "",
+  "createdAt": {
+    "$date": "2026-09-12T11:57:23.149Z"
+  },
+  "updatedAt": {
+    "$date": "2026-09-12T11:57:23.149Z"
+  },
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+},
+{
+  "_id": {
+    "$oid": "6aa53e6a5d974c376146590b"
+  },
+  "tableName": "PSD_Ref",
+  "description": "PSD_Ref",
+  "tableType": "REFERENCE",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "LogType",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 0
+    }
+  ],
+  "primaryKeys": [
+    "LogType"
+  ],
+  "referenceColumn": "LogType",
+  "referenceTable": "",
+  "createdAt": {
+    "$date": "2026-09-12T11:58:34.384Z"
+  },
+  "updatedAt": {
+    "$date": "2026-09-12T11:58:34.384Z"
+  },
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+},
+{
+  "_id": {
+    "$oid": "6aa54c0a5d974c3761467e7d"
+  },
+  "tableName": "PSDLogs",
+  "description": "PSD",
+  "tableType": "OPERATIONAL",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "LogType",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 0
+    },
+    {
+      "userField": "USERFIELD2",
+      "columnName": "instrumentId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 1
+    },
+    {
+      "userField": "USERFIELD3",
+      "columnName": "attributeId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 2
+    },
+    {
+      "userField": "USERFIELD4",
+      "columnName": "postingDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 3
+    },
+    {
+      "userField": "USERFIELD5",
+      "columnName": "effectiveDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 4
+    },
+    {
+      "userField": "USERFIELD6",
+      "columnName": "product_code",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 5
+    },
+    {
+      "userField": "USERFIELD7",
+      "columnName": "service_delivery_id",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 6
+    },
+    {
+      "userField": "USERFIELD8",
+      "columnName": "units_delivered",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 7
+    },
+    {
+      "userField": "USERFIELD9",
+      "columnName": "Logid",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 8
+    }
+  ],
+  "primaryKeys": [
+    "Logid"
+  ],
+  "referenceColumn": "LogType",
+  "referenceTable": "PSD_Ref",
+  "createdAt": {
+    "$date": "2026-09-12T12:56:42.632Z"
+  },
+  "updatedAt": {
+    "$date": "2026-09-12T12:56:42.632Z"
+  },
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+}]

@@ -1,0 +1,225 @@
+[{
+  "_id": {
+    "$oid": "6aa547d25d974c3761467da5"
+  },
+  "eventId": "SALE_ORDER_DETAILS",
+  "eventName": "SALE_ORDER_DETAILS",
+  "eventPriority": 1,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Attribute",
+      "sourceColumns": [
+        {
+          "label": "BOOKINGS_AMOUNT",
+          "value": "BOOKINGS_AMOUNT"
+        },
+        {
+          "label": "CURRENCY",
+          "value": "CURRENCY"
+        },
+        {
+          "label": "DURATION",
+          "value": "DURATION"
+        },
+        {
+          "label": "INVOICE_NUMBER",
+          "value": "INVOICE_NUMBER"
+        },
+        {
+          "label": "MRR",
+          "value": "MRR"
+        },
+        {
+          "label": "PRODUCT_ID",
+          "value": "PRODUCT_ID"
+        },
+        {
+          "label": "QUANTITY",
+          "value": "QUANTITY"
+        },
+        {
+          "label": "REFERENCE_INVOICE_NUMBER",
+          "value": "REFERENCE_INVOICE_NUMBER"
+        },
+        {
+          "label": "SALE_PRICE",
+          "value": "SALE_PRICE"
+        },
+        {
+          "label": "SERVICE_END_DATE",
+          "value": "SERVICE_END_DATE"
+        },
+        {
+          "label": "SERVICE_START_DATE",
+          "value": "SERVICE_START_DATE"
+        },
+        {
+          "label": "SUBSCRIPTION_ID",
+          "value": "SUBSCRIPTION_ID"
+        },
+        {
+          "label": "TRANSACTIONDATE",
+          "value": "TRANSACTIONDATE"
+        }
+      ],
+      "versionType": [
+        {
+          "label": "Current",
+          "value": "Current"
+        }
+      ],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6aa54a725d974c3761467e7b"
+  },
+  "eventId": "REVENUE_BALANCE",
+  "eventName": "REVENUE_BALANCE",
+  "eventPriority": 2,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_MODEL_EXECUTION",
+    "triggerCondition": "",
+    "triggerSource": []
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Balances",
+      "sourceColumns": [
+        {
+          "label": "EndingBalance",
+          "value": "EndingBalance"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "TOTAL_REVENUE",
+          "value": "TOTAL_REVENUE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6aa54a935d974c3761467e7c"
+  },
+  "eventId": "SSP_RULE",
+  "eventName": "SSP_RULE",
+  "eventPriority": 3,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_CUSTOM_DATA_TRIGGER",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "Reference Table",
+        "value": "reference_table"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Accounting_Policy",
+      "sourceColumns": [
+        {
+          "label": "product_code",
+          "value": "product_code"
+        },
+        {
+          "label": "recognition_method",
+          "value": "recognition_method"
+        },
+        {
+          "label": "ssp_amount",
+          "value": "ssp_amount"
+        },
+        {
+          "label": "standalone_price_policy",
+          "value": "standalone_price_policy"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6aa577e69162d44efa3fb40c"
+  },
+  "eventId": "PROF_SERVICE_DELIVERY",
+  "eventName": "PROF_SERVICE_DELIVERY",
+  "eventPriority": 4,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_CUSTOM_DATA_TRIGGER",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "Operational Table",
+        "value": "operational_table"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "PSDLogs",
+      "sourceColumns": [
+        {
+          "label": "product_code",
+          "value": "product_code"
+        },
+        {
+          "label": "service_delivery_id",
+          "value": "service_delivery_id"
+        },
+        {
+          "label": "units_delivered",
+          "value": "units_delivered"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "PSD",
+          "value": "PSD"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
+}]
