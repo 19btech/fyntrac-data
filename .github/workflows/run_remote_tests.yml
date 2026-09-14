@@ -45,7 +45,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_KEY }}
           timeout: 30m         # Timeout in 30 minutes
           envs: TEST_CASE
           script: |
