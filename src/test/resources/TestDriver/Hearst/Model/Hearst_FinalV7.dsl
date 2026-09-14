@@ -671,185 +671,195 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         bal_subids = collect_by_instrument('REVENUE_BALANCE_subinstrumentid')  # DSL_LINE:20
         bal_amounts = collect_by_instrument('REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE')  # DSL_LINE:21
         boarding_month_end = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT')  # DSL_LINE:22
+        register_delivery = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')  # DSL_LINE:23
+        pdel_subids = collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')  # DSL_LINE:24
+        pdel_units = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')  # DSL_LINE:25
+        pdel_postings = collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')  # DSL_LINE:26
         ## Iteration
-        line_policies = apply_each(subinstrumentid, "lookup(cat_policy, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:24
+        cur_delivery_units = apply_each(subinstrumentid, "sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))", {"postingdate": postingdate, "subinstrumentid": subinstrumentid, "pdel_subids": pdel_subids, "pdel_units": pdel_units, "pdel_postings": pdel_postings})  # DSL_LINE:28
 
         ## Iteration
-        line_ssp_dollar = apply_each(subinstrumentid, "lookup(cat_ssp_amount, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:27
+        line_policies = apply_each(subinstrumentid, "lookup(cat_policy, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:31
 
         ## Iteration
-        line_methods = apply_each(subinstrumentid, "lookup(cat_method, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_method": cat_method, "line_products": line_products})  # DSL_LINE:30
+        line_ssp_dollar = apply_each(subinstrumentid, "lookup(cat_ssp_amount, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:34
 
         ## Iteration
-        line_ssp_amounts = apply_each(subinstrumentid, "iif(eq(lookup(line_policies, subinstrumentid, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, subinstrumentid, each), lookup(line_sale_prices, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:33
-
-        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:35
-        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:36
-        ## Iteration
-        line_is_credit = apply_each(subinstrumentid, "iif(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)", {"subinstrumentid": subinstrumentid, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:38
+        line_methods = apply_each(subinstrumentid, "lookup(cat_method, cat_product, lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cat_product": cat_product, "cat_method": cat_method, "line_products": line_products})  # DSL_LINE:37
 
         ## Iteration
-        line_sale_price_nc = apply_each(subinstrumentid, "multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:41
+        line_ssp_amounts = apply_each(subinstrumentid, "iif(eq(lookup(line_policies, subinstrumentid, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, subinstrumentid, each), lookup(line_sale_prices, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:40
+
+        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:42
+        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:43
+        ## Iteration
+        line_is_credit = apply_each(subinstrumentid, "iif(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)", {"subinstrumentid": subinstrumentid, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:45
 
         ## Iteration
-        line_ssp_nc = apply_each(subinstrumentid, "multiply(lookup(line_ssp_amounts, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:44
-
-        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:46
-        total_ssp = sum(line_ssp_nc)  # DSL_LINE:47
-        ## Iteration
-        line_ratios = apply_each(subinstrumentid, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp))", {"subinstrumentid": subinstrumentid, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:49
+        line_sale_price_nc = apply_each(subinstrumentid, "multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:48
 
         ## Iteration
-        line_base_alloc = apply_each(subinstrumentid, "multiply(lookup(line_ratios, subinstrumentid, each), total_sale_price)", {"subinstrumentid": subinstrumentid, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:52
+        line_ssp_nc = apply_each(subinstrumentid, "multiply(lookup(line_ssp_amounts, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:51
+
+        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:53
+        total_ssp = sum(line_ssp_nc)  # DSL_LINE:54
+        ## Iteration
+        line_ratios = apply_each(subinstrumentid, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp))", {"subinstrumentid": subinstrumentid, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:56
 
         ## Iteration
-        noncredit_product_key = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), \"__CREDIT__\", lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_is_credit": line_is_credit})  # DSL_LINE:55
+        line_base_alloc = apply_each(subinstrumentid, "multiply(lookup(line_ratios, subinstrumentid, each), total_sale_price)", {"subinstrumentid": subinstrumentid, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:59
 
         ## Iteration
-        line_allocated = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, subinstrumentid, each))), lookup(line_base_alloc, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:58
+        noncredit_product_key = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), \"__CREDIT__\", lookup(line_products, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_is_credit": line_is_credit})  # DSL_LINE:62
 
         ## Iteration
-        line_balance = apply_each(subinstrumentid, "sum(multiply(eq(bal_subids, each), bal_amounts))", {"subinstrumentid": subinstrumentid, "bal_subids": bal_subids, "bal_amounts": bal_amounts})  # DSL_LINE:61
-
-        bal_postings = collect_by_instrument('REVENUE_BALANCE_postingdate')  # DSL_LINE:63
-        stale_balance_error = iif(eq(array_length(bal_postings), 0), 0, iif(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))  # DSL_LINE:64
-        ## Iteration
-        balance_row_count = apply_each(subinstrumentid, "sum(eq(bal_subids, each))", {"subinstrumentid": subinstrumentid, "bal_subids": bal_subids})  # DSL_LINE:66
-
-        balance_alignment_error = iif(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)  # DSL_LINE:68
-        ## Iteration
-        line_remaining = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), iif(gte(lookup(line_allocated, subinstrumentid, each), 0), max(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0), min(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0)))", {"subinstrumentid": subinstrumentid, "line_methods": line_methods, "line_allocated": line_allocated, "line_balance": line_balance})  # DSL_LINE:70
+        line_allocated = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, subinstrumentid, each))), lookup(line_base_alloc, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:65
 
         ## Iteration
-        line_po_days = apply_each(subinstrumentid, "add(date_diff_days(lookup(line_starts, subinstrumentid, each), lookup(line_ends, subinstrumentid, each)), 1)", {"subinstrumentid": subinstrumentid, "line_starts": line_starts, "line_ends": line_ends})  # DSL_LINE:73
+        line_balance = apply_each(subinstrumentid, "sum(multiply(eq(bal_subids, each), bal_amounts))", {"subinstrumentid": subinstrumentid, "bal_subids": bal_subids, "bal_amounts": bal_amounts})  # DSL_LINE:68
+
+        bal_postings = collect_by_instrument('REVENUE_BALANCE_postingdate')  # DSL_LINE:70
+        stale_balance_error = iif(eq(array_length(bal_postings), 0), 0, iif(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))  # DSL_LINE:71
+        ## Iteration
+        balance_row_count = apply_each(subinstrumentid, "sum(eq(bal_subids, each))", {"subinstrumentid": subinstrumentid, "bal_subids": bal_subids})  # DSL_LINE:73
+
+        balance_alignment_error = iif(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)  # DSL_LINE:75
+        ## Iteration
+        cur_delivery_amount = apply_each(subinstrumentid, "multiply(lookup(cur_delivery_units, subinstrumentid, each), lookup(line_allocated, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "cur_delivery_units": cur_delivery_units, "line_allocated": line_allocated})  # DSL_LINE:77
 
         ## Iteration
-        line_per_day = apply_each(subinstrumentid, "iif(eq(lookup(line_po_days, subinstrumentid, each), 0), 0, divide(lookup(line_allocated, subinstrumentid, each), lookup(line_po_days, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_allocated": line_allocated, "line_po_days": line_po_days})  # DSL_LINE:76
+        line_remaining = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(cur_delivery_amount, subinstrumentid, each)), iif(gte(lookup(line_allocated, subinstrumentid, each), 0), max(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0), min(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0)))", {"subinstrumentid": subinstrumentid, "line_methods": line_methods, "line_allocated": line_allocated, "line_balance": line_balance, "cur_delivery_amount": cur_delivery_amount})  # DSL_LINE:80
 
         ## Iteration
-        line_is_ratable = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"RATABLE\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:79
+        line_po_days = apply_each(subinstrumentid, "add(date_diff_days(lookup(line_starts, subinstrumentid, each), lookup(line_ends, subinstrumentid, each)), 1)", {"subinstrumentid": subinstrumentid, "line_starts": line_starts, "line_ends": line_ends})  # DSL_LINE:83
 
         ## Iteration
-        line_is_pit = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"POINT_IN_TIME\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:82
+        line_per_day = apply_each(subinstrumentid, "iif(eq(lookup(line_po_days, subinstrumentid, each), 0), 0, divide(lookup(line_allocated, subinstrumentid, each), lookup(line_po_days, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_allocated": line_allocated, "line_po_days": line_po_days})  # DSL_LINE:86
 
         ## Iteration
-        line_is_prop = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:85
+        line_is_ratable = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"RATABLE\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:89
 
         ## Iteration
-        line_ends_eom = apply_each(subinstrumentid, "end_of_month(lookup(line_ends, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_ends": line_ends})  # DSL_LINE:88
+        line_is_pit = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"POINT_IN_TIME\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:92
+
+        ## Iteration
+        line_is_prop = apply_each(subinstrumentid, "iif(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), 1, 0)", {"subinstrumentid": subinstrumentid, "line_methods": line_methods})  # DSL_LINE:95
+
+        ## Iteration
+        line_ends_eom = apply_each(subinstrumentid, "end_of_month(lookup(line_ends, subinstrumentid, each))", {"subinstrumentid": subinstrumentid, "line_ends": line_ends})  # DSL_LINE:98
 
         ## Schedule
-        p = period(line_starts, line_ends_eom, "M")  # DSL_LINE:91
-        rev_schedule = schedule(p, {  # DSL_LINE:92
-        "period_date": "period_date",  # DSL_LINE:93
-        "month_end": "end_of_month(period_date)",  # DSL_LINE:94
-        "days_in_month": "add(date_diff_days(iif(gt(date_diff_days(start_of_month(month_end), line_starts), 0), line_starts, start_of_month(month_end)), iif(gt(date_diff_days(line_ends, month_end), 0), line_ends, month_end)), 1)",  # DSL_LINE:95
-        "period_no": "add(period_index, 1)",  # DSL_LINE:96
-        "prior_ltd_days": "date_diff_days(line_starts, start_of_month(month_end))",  # DSL_LINE:97
-        "is_last": "iif(eq(date_diff_days(month_end, end_of_month(line_ends)), 0), 1, 0)",  # DSL_LINE:98
-        "gross_calc": "iif(eq(line_is_ratable, 1), multiply(line_per_day, days_in_month), iif(eq(line_is_pit, 1), iif(eq(date_diff_days(month_end, end_of_month(line_starts)), 0), line_allocated, 0), iif(eq(line_is_prop, 1), iif(eq(is_last, 1), line_remaining, 0), iif(eq(is_last, 1), line_allocated, 0))))",  # DSL_LINE:99
-        "cum_prior": "lag('ltd_gross', 1, 0)",  # DSL_LINE:100
-        "gross_revenue": "iif(eq(multiply(is_last, line_is_ratable), 1), subtract(line_allocated, cum_prior), gross_calc)",  # DSL_LINE:101
-        "boarding_me": "end_of_month(boarding_month_end)",  # DSL_LINE:102
-        "pre_gross": "iif(gt(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",  # DSL_LINE:103
-        "cum_pre": "add(lag('cum_pre', 1, 0), pre_gross)",  # DSL_LINE:104
-        "revenue_ppa": "round(iif(eq(date_diff_days(month_end, boarding_me), 0), lag('cum_pre', 1, 0), 0), 4)",  # DSL_LINE:105
-        "revenue": "iif(lte(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",  # DSL_LINE:106
-        "ltd_gross": "add(lag('ltd_gross', 1, 0), gross_revenue)"  # DSL_LINE:107
-        }, {"boarding_month_end": boarding_month_end, "line_allocated": line_allocated, "line_ends": line_ends, "line_is_pit": line_is_pit, "line_is_prop": line_is_prop, "line_is_ratable": line_is_ratable, "line_per_day": line_per_day, "line_remaining": line_remaining, "line_starts": line_starts, "item_names": line_products})  # DSL_LINE:108
-        rev_now = schedule_filter(rev_schedule, "month_end", postingdate, "revenue")  # DSL_LINE:109
-        ppa_now = schedule_filter(rev_schedule, "month_end", postingdate, "revenue_ppa")  # DSL_LINE:110
-        posted_rev_total = schedule_sum(rev_schedule, "revenue")  # DSL_LINE:111
-        ltd_close = schedule_last(rev_schedule, "ltd_gross")  # DSL_LINE:112
+        p = period(line_starts, line_ends_eom, "M")  # DSL_LINE:101
+        rev_schedule = schedule(p, {  # DSL_LINE:102
+        "period_date": "period_date",  # DSL_LINE:103
+        "month_end": "end_of_month(period_date)",  # DSL_LINE:104
+        "days_in_month": "add(date_diff_days(iif(gt(date_diff_days(start_of_month(month_end), line_starts), 0), line_starts, start_of_month(month_end)), iif(gt(date_diff_days(line_ends, month_end), 0), line_ends, month_end)), 1)",  # DSL_LINE:105
+        "period_no": "add(period_index, 1)",  # DSL_LINE:106
+        "prior_ltd_days": "date_diff_days(line_starts, start_of_month(month_end))",  # DSL_LINE:107
+        "is_last": "iif(eq(date_diff_days(month_end, end_of_month(line_ends)), 0), 1, 0)",  # DSL_LINE:108
+        "gross_calc": "iif(eq(line_is_ratable, 1), multiply(line_per_day, days_in_month), iif(eq(line_is_pit, 1), iif(eq(date_diff_days(month_end, end_of_month(line_starts)), 0), line_allocated, 0), iif(eq(line_is_prop, 1), iif(eq(is_last, 1), line_remaining, 0), iif(eq(is_last, 1), line_allocated, 0))))",  # DSL_LINE:109
+        "cum_prior": "lag('ltd_gross', 1, 0)",  # DSL_LINE:110
+        "gross_revenue": "iif(eq(multiply(is_last, line_is_ratable), 1), subtract(line_allocated, cum_prior), gross_calc)",  # DSL_LINE:111
+        "boarding_me": "end_of_month(boarding_month_end)",  # DSL_LINE:112
+        "pre_gross": "iif(gt(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",  # DSL_LINE:113
+        "cum_pre": "add(lag('cum_pre', 1, 0), pre_gross)",  # DSL_LINE:114
+        "revenue_ppa": "round(iif(eq(date_diff_days(month_end, boarding_me), 0), lag('cum_pre', 1, 0), 0), 4)",  # DSL_LINE:115
+        "revenue": "iif(lte(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",  # DSL_LINE:116
+        "ltd_gross": "add(lag('ltd_gross', 1, 0), gross_revenue)"  # DSL_LINE:117
+        }, {"boarding_month_end": boarding_month_end, "line_allocated": line_allocated, "line_ends": line_ends, "line_is_pit": line_is_pit, "line_is_prop": line_is_prop, "line_is_ratable": line_is_ratable, "line_per_day": line_per_day, "line_remaining": line_remaining, "line_starts": line_starts, "item_names": line_products})  # DSL_LINE:118
+        rev_now = schedule_filter(rev_schedule, "month_end", postingdate, "revenue")  # DSL_LINE:119
+        ppa_now = schedule_filter(rev_schedule, "month_end", postingdate, "revenue_ppa")  # DSL_LINE:120
+        posted_rev_total = schedule_sum(rev_schedule, "revenue")  # DSL_LINE:121
+        ltd_close = schedule_last(rev_schedule, "ltd_gross")  # DSL_LINE:122
 
         ## Iteration
-        ppa_amount = apply_each(subinstrumentid, "round(lookup(ppa_now, subinstrumentid, each), 4)", {"subinstrumentid": subinstrumentid, "ppa_now": ppa_now})  # DSL_LINE:115
+        ppa_amount = apply_each(subinstrumentid, "round(lookup(ppa_now, subinstrumentid, each), 4)", {"subinstrumentid": subinstrumentid, "ppa_now": ppa_now})  # DSL_LINE:125
 
         ## Iteration
-        rev_amount = apply_each(subinstrumentid, "lookup(rev_now, subinstrumentid, each)", {"subinstrumentid": subinstrumentid, "rev_now": rev_now})  # DSL_LINE:118
+        rev_amount = apply_each(subinstrumentid, "lookup(rev_now, subinstrumentid, each)", {"subinstrumentid": subinstrumentid, "rev_now": rev_now})  # DSL_LINE:128
 
-        recon_difference = subtract(posted_rev_total, line_allocated)  # DSL_LINE:120
+        recon_difference = subtract(posted_rev_total, line_allocated)  # DSL_LINE:130
         ## Iteration
-        per_line_credit_err = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), iif(gt(abs(add(lookup(line_sale_prices, subinstrumentid, each), lookup(line_sale_prices, noncredit_product_key, lookup(line_products, subinstrumentid, each)))), 0.005), 1, 0), 0)", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:122
+        per_line_credit_err = apply_each(subinstrumentid, "iif(eq(lookup(line_is_credit, subinstrumentid, each), 1), iif(gt(abs(add(lookup(line_sale_prices, subinstrumentid, each), lookup(line_sale_prices, noncredit_product_key, lookup(line_products, subinstrumentid, each)))), 0.005), 1, 0), 0)", {"subinstrumentid": subinstrumentid, "line_products": line_products, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:132
 
-        credit_amount_error = iif(gt(sum(per_line_credit_err), 0), 1, 0)  # DSL_LINE:124
+        credit_amount_error = iif(gt(sum(per_line_credit_err), 0), 1, 0)  # DSL_LINE:134
         ## Iteration
-        ppa_amount_neg = apply_each(subinstrumentid, "multiply(lookup(ppa_amount, subinstrumentid, each), -1)", {"subinstrumentid": subinstrumentid, "ppa_amount": ppa_amount})  # DSL_LINE:126
+        ppa_amount_neg = apply_each(subinstrumentid, "multiply(lookup(ppa_amount, subinstrumentid, each), -1)", {"subinstrumentid": subinstrumentid, "ppa_amount": ppa_amount})  # DSL_LINE:136
 
         ## Iteration
-        rev_amount_neg = apply_each(subinstrumentid, "multiply(lookup(rev_amount, subinstrumentid, each), -1)", {"subinstrumentid": subinstrumentid, "rev_amount": rev_amount})  # DSL_LINE:129
+        rev_amount_neg = apply_each(subinstrumentid, "multiply(lookup(rev_amount, subinstrumentid, each), -1)", {"subinstrumentid": subinstrumentid, "rev_amount": rev_amount})  # DSL_LINE:139
 
 
         ## Create Transactions
-        createTransaction(postingdate, effectivedate, "Revenue", rev_amount_neg, subinstrumentid)  # DSL_LINE:133
-        createTransaction(postingdate, effectivedate, "Revenue_PPA", ppa_amount_neg, subinstrumentid)  # DSL_LINE:134
+        createTransaction(postingdate, effectivedate, "Revenue", rev_amount_neg, subinstrumentid)  # DSL_LINE:143
+        createTransaction(postingdate, effectivedate, "Revenue_PPA", ppa_amount_neg, subinstrumentid)  # DSL_LINE:144
 
         ## ═══════════════════════════════════════════════════════════════
         ## REVREC_PROPORTIONAL_DELIVERY
         ## ═══════════════════════════════════════════════════════════════
 
         ## Steps
-        postingdate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:141
-        effectivedate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:142
-        delivery_effdate = PROF_SERVICE_DELIVERY_effectivedate  # DSL_LINE:143
-        subinstrumentid = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:144
-        this_sub = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:145
-        units = PROF_SERVICE_DELIVERY_units_delivered  # DSL_LINE:146
-        concat_key = concat(instrumentid, this_sub)  # DSL_LINE:147
-        register_ssp = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:148
-        register_so = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:149
-        cat_product = collect_all('SSP_RULE_product_code')  # DSL_LINE:150
-        cat_policy = collect_all('SSP_RULE_standalone_price_policy')  # DSL_LINE:151
-        cat_ssp_amount = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:152
-        line_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')  # DSL_LINE:153
-        line_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')  # DSL_LINE:154
-        line_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:155
-        line_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')  # DSL_LINE:156
-        boarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))  # DSL_LINE:157
+        postingdate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:151
+        effectivedate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:152
+        delivery_effdate = PROF_SERVICE_DELIVERY_effectivedate  # DSL_LINE:153
+        subinstrumentid = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:154
+        this_sub = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:155
+        units = PROF_SERVICE_DELIVERY_units_delivered  # DSL_LINE:156
+        concat_key = concat(instrumentid, this_sub)  # DSL_LINE:157
+        register_ssp = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:158
+        register_so = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:159
+        cat_product = collect_all('SSP_RULE_product_code')  # DSL_LINE:160
+        cat_policy = collect_all('SSP_RULE_standalone_price_policy')  # DSL_LINE:161
+        cat_ssp_amount = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:162
+        line_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')  # DSL_LINE:163
+        line_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')  # DSL_LINE:164
+        line_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:165
+        line_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')  # DSL_LINE:166
+        boarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))  # DSL_LINE:167
         ## Iteration
-        line_policies = apply_each(line_products, "lookup(cat_policy, cat_product, each)", {"cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:159
+        line_policies = apply_each(line_products, "lookup(cat_policy, cat_product, each)", {"cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:169
 
         ## Iteration
-        line_ssp_dollar = apply_each(line_products, "lookup(cat_ssp_amount, cat_product, each)", {"cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:162
+        line_ssp_dollar = apply_each(line_products, "lookup(cat_ssp_amount, cat_product, each)", {"cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:172
 
         ## Iteration
-        line_ssp_amounts = apply_each(line_products, "iif(eq(lookup(line_policies, line_products, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))", {"line_products": line_products, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:165
+        line_ssp_amounts = apply_each(line_products, "iif(eq(lookup(line_policies, line_products, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))", {"line_products": line_products, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:175
 
-        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:167
-        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:168
+        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:177
+        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:178
         ## Iteration
-        line_is_credit = apply_each(line_sub_ids, "iif(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)", {"line_sub_ids": line_sub_ids, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:170
-
-        ## Iteration
-        line_sale_price_nc = apply_each(line_sub_ids, "multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:173
+        line_is_credit = apply_each(line_sub_ids, "iif(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)", {"line_sub_ids": line_sub_ids, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:180
 
         ## Iteration
-        line_ssp_nc = apply_each(line_sub_ids, "multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:176
-
-        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:178
-        total_ssp = sum(line_ssp_nc)  # DSL_LINE:179
-        ## Iteration
-        line_ratios = apply_each(line_sub_ids, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:181
+        line_sale_price_nc = apply_each(line_sub_ids, "multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:183
 
         ## Iteration
-        line_base_alloc = apply_each(line_sub_ids, "round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)", {"line_sub_ids": line_sub_ids, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:184
+        line_ssp_nc = apply_each(line_sub_ids, "multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:186
+
+        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:188
+        total_ssp = sum(line_ssp_nc)  # DSL_LINE:189
+        ## Iteration
+        line_ratios = apply_each(line_sub_ids, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:191
 
         ## Iteration
-        noncredit_product_key = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), \"__CREDIT__\", lookup(line_products, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit})  # DSL_LINE:187
+        line_base_alloc = apply_each(line_sub_ids, "round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)", {"line_sub_ids": line_sub_ids, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:194
 
         ## Iteration
-        line_allocated = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:190
+        noncredit_product_key = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), \"__CREDIT__\", lookup(line_products, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit})  # DSL_LINE:197
 
-        allocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)  # DSL_LINE:192
-        delivery_amount = round(multiply(units, allocated_for_line), 4)  # DSL_LINE:193
-        delivery_ppa = iif(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:194
-        delivery_revenue = iif(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:195
-        delivery_ppa_neg = multiply(delivery_ppa, -1)  # DSL_LINE:196
-        delivery_revenue_neg = multiply(delivery_revenue, -1)  # DSL_LINE:197
+        ## Iteration
+        line_allocated = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:200
+
+        allocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)  # DSL_LINE:202
+        delivery_amount = round(multiply(units, allocated_for_line), 4)  # DSL_LINE:203
+        delivery_ppa = iif(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:204
+        delivery_revenue = iif(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:205
+        delivery_ppa_neg = multiply(delivery_ppa, -1)  # DSL_LINE:206
+        delivery_revenue_neg = multiply(delivery_revenue, -1)  # DSL_LINE:207
 
         ## Create Transactions
-        createTransaction(postingdate, effectivedate, "Revenue", delivery_revenue_neg, subinstrumentid)  # DSL_LINE:200
-        createTransaction(postingdate, effectivedate, "Revenue_PPA", delivery_ppa_neg, subinstrumentid)  # DSL_LINE:201
+        createTransaction(postingdate, effectivedate, "Revenue", delivery_revenue_neg, subinstrumentid)  # DSL_LINE:210
+        createTransaction(postingdate, effectivedate, "Revenue_PPA", delivery_ppa_neg, subinstrumentid)  # DSL_LINE:211
     
     # Get all transactions created via createTransaction()
     results = _get_transaction_results()
