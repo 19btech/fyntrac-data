@@ -164,4 +164,120 @@
   },
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+},
+{
+  "_id": {
+    "$oid": "6aa7841c3a46c93e86d2e4a1"
+  },
+  "tableName": "Billing_Type",
+  "description": "",
+  "tableType": "REFERENCE",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "Billing_Type",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 0
+    }
+  ],
+  "primaryKeys": [
+    "Billing_Type"
+  ],
+  "referenceColumn": "Billing_Type",
+  "referenceTable": "",
+  "createdAt": {
+    "$date": "2026-09-14T05:20:28.160Z"
+  },
+  "updatedAt": {
+    "$date": "2026-09-14T05:20:28.160Z"
+  },
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
+},
+{
+  "_id": {
+    "$oid": "6aa784993a46c93e86d2e822"
+  },
+  "tableName": "Billing_Schedule",
+  "description": "Billing_Schedule",
+  "tableType": "OPERATIONAL",
+  "columns": [
+    {
+      "userField": "USERFIELD1",
+      "columnName": "Billing_Type",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 0
+    },
+    {
+      "userField": "USERFIELD2",
+      "columnName": "instrumentId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 1
+    },
+    {
+      "userField": "USERFIELD3",
+      "columnName": "attributeId",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 2
+    },
+    {
+      "userField": "USERFIELD4",
+      "columnName": "postingDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 3
+    },
+    {
+      "userField": "USERFIELD5",
+      "columnName": "effectiveDate",
+      "dataType": "DATE",
+      "nullable": false,
+      "displayOrder": 4
+    },
+    {
+      "userField": "USERFIELD6",
+      "columnName": "Product_Code",
+      "dataType": "STRING",
+      "nullable": false,
+      "displayOrder": 5
+    },
+    {
+      "userField": "USERFIELD7",
+      "columnName": "Billing_Amount",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 6
+    },
+    {
+      "userField": "USERFIELD8",
+      "columnName": "Invoice_Number",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 7
+    },
+    {
+      "userField": "USERFIELD9",
+      "columnName": "Reference_Invoice_Number",
+      "dataType": "STRING",
+      "nullable": true,
+      "displayOrder": 8
+    }
+  ],
+  "primaryKeys": [
+    "attributeId"
+  ],
+  "referenceColumn": "Billing_Type",
+  "referenceTable": "Billing_Type",
+  "createdAt": {
+    "$date": "2026-09-14T05:22:33.650Z"
+  },
+  "updatedAt": {
+    "$date": "2026-09-14T05:22:33.650Z"
+  },
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.CustomTableDefinition"
 }]

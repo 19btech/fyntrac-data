@@ -222,4 +222,66 @@
   "isActive": true,
   "isDeleted": false,
   "_class": "com.fyntrac.common.entity.EventConfiguration"
+},
+{
+  "_id": {
+    "$oid": "6aa785fb3a46c93e86d361ff"
+  },
+  "eventId": "BILLING_SCHEDULE",
+  "eventName": "BILLING_SCHEDULE",
+  "eventPriority": 5,
+  "description": "",
+  "triggerSetup": {
+    "triggerType": "ON_CUSTOM_DATA_TRIGGER",
+    "triggerCondition": "",
+    "triggerSource": [
+      {
+        "label": "Operational Table",
+        "value": "operational_table"
+      }
+    ]
+  },
+  "sourceMappings": [
+    {
+      "sourceTable": "Billing_Schedule",
+      "sourceColumns": [
+        {
+          "label": "Product_Code",
+          "value": "Product_Code"
+        },
+        {
+          "label": "Billing_Amount",
+          "value": "Billing_Amount"
+        },
+        {
+          "label": "Invoice_Number",
+          "value": "Invoice_Number"
+        },
+        {
+          "label": "Reference_Invoice_Number",
+          "value": "Reference_Invoice_Number"
+        }
+      ],
+      "versionType": [],
+      "dataMapping": [
+        {
+          "label": "INVOICE",
+          "value": "INVOICE"
+        },
+        {
+          "label": "CREDITNOTE",
+          "value": "CREDITNOTE"
+        }
+      ],
+      "fieldType": "NONE"
+    }
+  ],
+  "updatedAt": {
+    "$date": "2026-09-14T05:36:14.777Z"
+  },
+  "createdBy": "67171f54dcbd9e7e9a527801",
+  "updatedBy": "67171f54dcbd9e7e9a527801",
+  "isActive": true,
+  "isDeleted": false,
+  "_class": "com.fyntrac.common.entity.EventConfiguration"
 }]

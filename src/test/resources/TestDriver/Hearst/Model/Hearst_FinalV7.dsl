@@ -539,55 +539,6 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         set_current_context(instrumentid, postingdate, effectivedate, subinstrumentid)
         
         # Extract fields from all events with proper datatype conversion
-        # Fields from REVENUE_BALANCE (activity)
-        REVENUE_BALANCE_postingdate = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_postingdate', ''))
-        REVENUE_BALANCE_effectivedate = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_effectivedate', ''))
-        REVENUE_BALANCE_subinstrumentid = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_subinstrumentid', '1'))
-        REVENUE_BALANCE_BALANCES_BEGINNINGBALANCE_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_BEGINNINGBALANCE_TOTAL_REVENUE', 0) or 0)
-        REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE', 0) or 0)
-        REVENUE_BALANCE_BALANCES_ACTIVITY_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_ACTIVITY_TOTAL_REVENUE', 0) or 0)
-        # Fields from SSP_RULE (reference)
-        _fv = get_field_case_insensitive(row, 'SSP_RULE_product_code', '')
-        if isinstance(_fv, (int, float)):
-            SSP_RULE_product_code = _fv
-        else:
-            _s = str(_fv if _fv is not None else '')
-            try: SSP_RULE_product_code = float(_s) if _s.strip() else _s
-            except (ValueError, TypeError): SSP_RULE_product_code = _s
-        _fv = get_field_case_insensitive(row, 'SSP_RULE_recognition_method', '')
-        if isinstance(_fv, (int, float)):
-            SSP_RULE_recognition_method = _fv
-        else:
-            _s = str(_fv if _fv is not None else '')
-            try: SSP_RULE_recognition_method = float(_s) if _s.strip() else _s
-            except (ValueError, TypeError): SSP_RULE_recognition_method = _s
-        SSP_RULE_ssp_amount = float(get_field_case_insensitive(row, 'SSP_RULE_ssp_amount', 0) or 0)
-        _fv = get_field_case_insensitive(row, 'SSP_RULE_standalone_price_policy', '')
-        if isinstance(_fv, (int, float)):
-            SSP_RULE_standalone_price_policy = _fv
-        else:
-            _s = str(_fv if _fv is not None else '')
-            try: SSP_RULE_standalone_price_policy = float(_s) if _s.strip() else _s
-            except (ValueError, TypeError): SSP_RULE_standalone_price_policy = _s
-        # Fields from PROF_SERVICE_DELIVERY (activity)
-        PROF_SERVICE_DELIVERY_postingdate = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_postingdate', ''))
-        PROF_SERVICE_DELIVERY_effectivedate = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_effectivedate', ''))
-        PROF_SERVICE_DELIVERY_subinstrumentid = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_subinstrumentid', '1'))
-        _fv = get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_product_code', '')
-        if isinstance(_fv, (int, float)):
-            PROF_SERVICE_DELIVERY_product_code = _fv
-        else:
-            _s = str(_fv if _fv is not None else '')
-            try: PROF_SERVICE_DELIVERY_product_code = float(_s) if _s.strip() else _s
-            except (ValueError, TypeError): PROF_SERVICE_DELIVERY_product_code = _s
-        _fv = get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_service_delivery_id', '')
-        if isinstance(_fv, (int, float)):
-            PROF_SERVICE_DELIVERY_service_delivery_id = _fv
-        else:
-            _s = str(_fv if _fv is not None else '')
-            try: PROF_SERVICE_DELIVERY_service_delivery_id = float(_s) if _s.strip() else _s
-            except (ValueError, TypeError): PROF_SERVICE_DELIVERY_service_delivery_id = _s
-        PROF_SERVICE_DELIVERY_units_delivered = float(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_units_delivered', 0) or 0)
         # Fields from SALE_ORDER_DETAILS (activity)
         SALE_ORDER_DETAILS_postingdate = str(get_field_case_insensitive(row, 'SALE_ORDER_DETAILS_postingdate', ''))
         SALE_ORDER_DETAILS_effectivedate = str(get_field_case_insensitive(row, 'SALE_ORDER_DETAILS_effectivedate', ''))
@@ -647,6 +598,81 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
             try: SALE_ORDER_DETAILS_ATTRIBUTE_SUBSCRIPTION_ID_CURRENT = float(_s) if _s.strip() else _s
             except (ValueError, TypeError): SALE_ORDER_DETAILS_ATTRIBUTE_SUBSCRIPTION_ID_CURRENT = _s
         SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT = str(get_field_case_insensitive(row, 'SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT', ''))
+        # Fields from REVENUE_BALANCE (activity)
+        REVENUE_BALANCE_postingdate = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_postingdate', ''))
+        REVENUE_BALANCE_effectivedate = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_effectivedate', ''))
+        REVENUE_BALANCE_subinstrumentid = str(get_field_case_insensitive(row, 'REVENUE_BALANCE_subinstrumentid', '1'))
+        REVENUE_BALANCE_BALANCES_BEGINNINGBALANCE_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_BEGINNINGBALANCE_TOTAL_REVENUE', 0) or 0)
+        REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE', 0) or 0)
+        REVENUE_BALANCE_BALANCES_ACTIVITY_TOTAL_REVENUE = float(get_field_case_insensitive(row, 'REVENUE_BALANCE_BALANCES_ACTIVITY_TOTAL_REVENUE', 0) or 0)
+        # Fields from BILLING_SCHEDULE (activity)
+        BILLING_SCHEDULE_postingdate = str(get_field_case_insensitive(row, 'BILLING_SCHEDULE_postingdate', ''))
+        BILLING_SCHEDULE_effectivedate = str(get_field_case_insensitive(row, 'BILLING_SCHEDULE_effectivedate', ''))
+        BILLING_SCHEDULE_subinstrumentid = str(get_field_case_insensitive(row, 'BILLING_SCHEDULE_subinstrumentid', '1'))
+        _fv = get_field_case_insensitive(row, 'BILLING_SCHEDULE_product_code', '')
+        if isinstance(_fv, (int, float)):
+            BILLING_SCHEDULE_product_code = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: BILLING_SCHEDULE_product_code = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): BILLING_SCHEDULE_product_code = _s
+        BILLING_SCHEDULE_billing_amount = float(get_field_case_insensitive(row, 'BILLING_SCHEDULE_billing_amount', 0) or 0)
+        _fv = get_field_case_insensitive(row, 'BILLING_SCHEDULE_invoice_number', '')
+        if isinstance(_fv, (int, float)):
+            BILLING_SCHEDULE_invoice_number = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: BILLING_SCHEDULE_invoice_number = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): BILLING_SCHEDULE_invoice_number = _s
+        _fv = get_field_case_insensitive(row, 'BILLING_SCHEDULE_reference_invoice_number', '')
+        if isinstance(_fv, (int, float)):
+            BILLING_SCHEDULE_reference_invoice_number = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: BILLING_SCHEDULE_reference_invoice_number = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): BILLING_SCHEDULE_reference_invoice_number = _s
+        # Fields from SSP_RULE (reference)
+        _fv = get_field_case_insensitive(row, 'SSP_RULE_product_code', '')
+        if isinstance(_fv, (int, float)):
+            SSP_RULE_product_code = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: SSP_RULE_product_code = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): SSP_RULE_product_code = _s
+        _fv = get_field_case_insensitive(row, 'SSP_RULE_recognition_method', '')
+        if isinstance(_fv, (int, float)):
+            SSP_RULE_recognition_method = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: SSP_RULE_recognition_method = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): SSP_RULE_recognition_method = _s
+        SSP_RULE_ssp_amount = float(get_field_case_insensitive(row, 'SSP_RULE_ssp_amount', 0) or 0)
+        _fv = get_field_case_insensitive(row, 'SSP_RULE_standalone_price_policy', '')
+        if isinstance(_fv, (int, float)):
+            SSP_RULE_standalone_price_policy = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: SSP_RULE_standalone_price_policy = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): SSP_RULE_standalone_price_policy = _s
+        # Fields from PROF_SERVICE_DELIVERY (activity)
+        PROF_SERVICE_DELIVERY_postingdate = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_postingdate', ''))
+        PROF_SERVICE_DELIVERY_effectivedate = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_effectivedate', ''))
+        PROF_SERVICE_DELIVERY_subinstrumentid = str(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_subinstrumentid', '1'))
+        _fv = get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_product_code', '')
+        if isinstance(_fv, (int, float)):
+            PROF_SERVICE_DELIVERY_product_code = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: PROF_SERVICE_DELIVERY_product_code = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): PROF_SERVICE_DELIVERY_product_code = _s
+        _fv = get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_service_delivery_id', '')
+        if isinstance(_fv, (int, float)):
+            PROF_SERVICE_DELIVERY_service_delivery_id = _fv
+        else:
+            _s = str(_fv if _fv is not None else '')
+            try: PROF_SERVICE_DELIVERY_service_delivery_id = float(_s) if _s.strip() else _s
+            except (ValueError, TypeError): PROF_SERVICE_DELIVERY_service_delivery_id = _s
+        PROF_SERVICE_DELIVERY_units_delivered = float(get_field_case_insensitive(row, 'PROF_SERVICE_DELIVERY_units_delivered', 0) or 0)
         
         # Execute DSL logic - transactions are created via createTransaction()
         ## ═══════════════════════════════════════════════════════════════
@@ -789,77 +815,94 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         ## Iteration
         rev_amount_neg = apply_each(subinstrumentid, "multiply(lookup(rev_amount, subinstrumentid, each), -1)", {"subinstrumentid": subinstrumentid, "rev_amount": rev_amount})  # DSL_LINE:139
 
+        ## Iteration
+        alloc_booked = apply_each(subinstrumentid, "iif(eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0), lookup(line_allocated, subinstrumentid, each), 0)", {"postingdate": postingdate, "subinstrumentid": subinstrumentid, "boarding_month_end": boarding_month_end, "line_allocated": line_allocated})  # DSL_LINE:142
+
 
         ## Create Transactions
-        createTransaction(postingdate, effectivedate, "Revenue", rev_amount_neg, subinstrumentid)  # DSL_LINE:143
-        createTransaction(postingdate, effectivedate, "Revenue_PPA", ppa_amount_neg, subinstrumentid)  # DSL_LINE:144
+        createTransaction(postingdate, effectivedate, "Revenue", rev_amount_neg, subinstrumentid)  # DSL_LINE:146
+        createTransaction(postingdate, effectivedate, "Revenue_PPA", ppa_amount_neg, subinstrumentid)  # DSL_LINE:147
+        createTransaction(postingdate, effectivedate, "ALLOCATED_REVENUE", alloc_booked, subinstrumentid)  # DSL_LINE:148
 
         ## ═══════════════════════════════════════════════════════════════
         ## REVREC_PROPORTIONAL_DELIVERY
         ## ═══════════════════════════════════════════════════════════════
 
         ## Steps
-        postingdate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:151
-        effectivedate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:152
-        delivery_effdate = PROF_SERVICE_DELIVERY_effectivedate  # DSL_LINE:153
-        subinstrumentid = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:154
-        this_sub = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:155
-        units = PROF_SERVICE_DELIVERY_units_delivered  # DSL_LINE:156
-        concat_key = concat(instrumentid, this_sub)  # DSL_LINE:157
-        register_ssp = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:158
-        register_so = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:159
-        cat_product = collect_all('SSP_RULE_product_code')  # DSL_LINE:160
-        cat_policy = collect_all('SSP_RULE_standalone_price_policy')  # DSL_LINE:161
-        cat_ssp_amount = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:162
-        line_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')  # DSL_LINE:163
-        line_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')  # DSL_LINE:164
-        line_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:165
-        line_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')  # DSL_LINE:166
-        boarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))  # DSL_LINE:167
+        postingdate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:155
+        effectivedate = PROF_SERVICE_DELIVERY_postingdate  # DSL_LINE:156
+        delivery_effdate = PROF_SERVICE_DELIVERY_effectivedate  # DSL_LINE:157
+        subinstrumentid = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:158
+        this_sub = PROF_SERVICE_DELIVERY_subinstrumentid  # DSL_LINE:159
+        units = PROF_SERVICE_DELIVERY_units_delivered  # DSL_LINE:160
+        concat_key = concat(instrumentid, this_sub)  # DSL_LINE:161
+        register_ssp = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:162
+        register_so = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:163
+        cat_product = collect_all('SSP_RULE_product_code')  # DSL_LINE:164
+        cat_policy = collect_all('SSP_RULE_standalone_price_policy')  # DSL_LINE:165
+        cat_ssp_amount = collect_all('SSP_RULE_ssp_amount')  # DSL_LINE:166
+        line_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')  # DSL_LINE:167
+        line_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')  # DSL_LINE:168
+        line_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')  # DSL_LINE:169
+        line_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')  # DSL_LINE:170
+        boarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))  # DSL_LINE:171
         ## Iteration
-        line_policies = apply_each(line_products, "lookup(cat_policy, cat_product, each)", {"cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:169
+        line_policies = apply_each(line_products, "lookup(cat_policy, cat_product, each)", {"cat_product": cat_product, "cat_policy": cat_policy, "line_products": line_products})  # DSL_LINE:173
 
         ## Iteration
-        line_ssp_dollar = apply_each(line_products, "lookup(cat_ssp_amount, cat_product, each)", {"cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:172
+        line_ssp_dollar = apply_each(line_products, "lookup(cat_ssp_amount, cat_product, each)", {"cat_product": cat_product, "cat_ssp_amount": cat_ssp_amount, "line_products": line_products})  # DSL_LINE:176
 
         ## Iteration
-        line_ssp_amounts = apply_each(line_products, "iif(eq(lookup(line_policies, line_products, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))", {"line_products": line_products, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:175
+        line_ssp_amounts = apply_each(line_products, "iif(eq(lookup(line_policies, line_products, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))", {"line_products": line_products, "line_sale_prices": line_sale_prices, "line_policies": line_policies, "line_ssp_dollar": line_ssp_dollar})  # DSL_LINE:179
 
-        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:177
-        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:178
+        line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:181
+        line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:182
         ## Iteration
-        line_is_credit = apply_each(line_sub_ids, "iif(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)", {"line_sub_ids": line_sub_ids, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:180
-
-        ## Iteration
-        line_sale_price_nc = apply_each(line_sub_ids, "multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:183
+        line_is_credit = apply_each(line_sub_ids, "iif(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)", {"line_sub_ids": line_sub_ids, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:184
 
         ## Iteration
-        line_ssp_nc = apply_each(line_sub_ids, "multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:186
-
-        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:188
-        total_ssp = sum(line_ssp_nc)  # DSL_LINE:189
-        ## Iteration
-        line_ratios = apply_each(line_sub_ids, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:191
+        line_sale_price_nc = apply_each(line_sub_ids, "multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:187
 
         ## Iteration
-        line_base_alloc = apply_each(line_sub_ids, "round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)", {"line_sub_ids": line_sub_ids, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:194
+        line_ssp_nc = apply_each(line_sub_ids, "multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "line_is_credit": line_is_credit})  # DSL_LINE:190
+
+        total_sale_price = sum(line_sale_price_nc)  # DSL_LINE:192
+        total_ssp = sum(line_ssp_nc)  # DSL_LINE:193
+        ## Iteration
+        line_ratios = apply_each(line_sub_ids, "iif(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))", {"line_sub_ids": line_sub_ids, "line_ssp_amounts": line_ssp_amounts, "total_ssp": total_ssp})  # DSL_LINE:195
 
         ## Iteration
-        noncredit_product_key = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), \"__CREDIT__\", lookup(line_products, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit})  # DSL_LINE:197
+        line_base_alloc = apply_each(line_sub_ids, "round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)", {"line_sub_ids": line_sub_ids, "total_sale_price": total_sale_price, "line_ratios": line_ratios})  # DSL_LINE:198
 
         ## Iteration
-        line_allocated = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:200
+        noncredit_product_key = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), \"__CREDIT__\", lookup(line_products, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit})  # DSL_LINE:201
 
-        allocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)  # DSL_LINE:202
-        delivery_amount = round(multiply(units, allocated_for_line), 4)  # DSL_LINE:203
-        delivery_ppa = iif(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:204
-        delivery_revenue = iif(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:205
-        delivery_ppa_neg = multiply(delivery_ppa, -1)  # DSL_LINE:206
-        delivery_revenue_neg = multiply(delivery_revenue, -1)  # DSL_LINE:207
+        ## Iteration
+        line_allocated = apply_each(line_sub_ids, "iif(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc, line_sub_ids, each))", {"line_products": line_products, "line_sub_ids": line_sub_ids, "line_is_credit": line_is_credit, "line_base_alloc": line_base_alloc, "noncredit_product_key": noncredit_product_key})  # DSL_LINE:204
+
+        allocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)  # DSL_LINE:206
+        delivery_amount = round(multiply(units, allocated_for_line), 4)  # DSL_LINE:207
+        delivery_ppa = iif(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:208
+        delivery_revenue = iif(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)  # DSL_LINE:209
+        delivery_ppa_neg = multiply(delivery_ppa, -1)  # DSL_LINE:210
+        delivery_revenue_neg = multiply(delivery_revenue, -1)  # DSL_LINE:211
 
         ## Create Transactions
-        createTransaction(postingdate, effectivedate, "Revenue", delivery_revenue_neg, subinstrumentid)  # DSL_LINE:210
-        createTransaction(postingdate, effectivedate, "Revenue_PPA", delivery_ppa_neg, subinstrumentid)  # DSL_LINE:211
+        createTransaction(postingdate, effectivedate, "Revenue", delivery_revenue_neg, subinstrumentid)  # DSL_LINE:214
+        createTransaction(postingdate, effectivedate, "Revenue_PPA", delivery_ppa_neg, subinstrumentid)  # DSL_LINE:215
+
+        ## ═══════════════════════════════════════════════════════════════
+        ## REVREC_BILLING
+        ## ═══════════════════════════════════════════════════════════════
+
+        ## Steps
+        postingdate = BILLING_SCHEDULE_postingdate  # DSL_LINE:222
+        effectivedate = BILLING_SCHEDULE_effectivedate  # DSL_LINE:223
+        subinstrumentid = collect_by_instrument('BILLING_SCHEDULE_subinstrumentid')  # DSL_LINE:224
+        billing_amount = collect_by_instrument('BILLING_SCHEDULE_billing_amount')  # DSL_LINE:225
+
+        ## Create Transactions
+        createTransaction(postingdate, effectivedate, "NEW_BILLING", billing_amount, subinstrumentid)  # DSL_LINE:228
     
     # Get all transactions created via createTransaction()
     results = _get_transaction_results()
