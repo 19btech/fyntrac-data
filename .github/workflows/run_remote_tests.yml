@@ -6,6 +6,33 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      test_case:
+        description: "Test case to run"
+        required: true
+        default: "ALL"
+        type: choice
+        options:
+          - ALL
+          - Hearst
+          - IFRS9_Stage3
+          - IFRS9_Stage3_DSL
+          - TestAsset
+          - TestEvent
+          - TestGFO
+          - TestGL
+          - TestGL2
+          - TestIFRS9
+          - TestRevenue
+          - TestRevenue_DSL
+          - TestSBO
+          - TestSBO_DSL
+          - TestSBO_Replay_M1
+          - TestSBO_Replay_M1_DSL
+          - TestSBO_Replay_M2
+          - TestSBO_Replay_M2_DSL
+          - TestSBO_Replay_Monthly
+          - TestSBO_Replay_Monthly_RC
 
 jobs:
   run-tests:
@@ -16,24 +43,32 @@ jobs:
         id: ssh_run
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: 72.60.172.224
-          username: root
-          password: Funrun21@19b
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
           timeout: 30m         # Timeout in 30 minutes
+          envs: TEST_CASE
           script: |
             cd ~/Workspace/fyntrac-data
-            chmod +x run_tests.sh
-            ./run_tests.sh
+            chmod +x run_tests.sh run_dsl_tests.sh run_single_test.sh
+            if [ "$TEST_CASE" = "ALL" ]; then
+              ./run_tests.sh
+              ./run_dsl_tests.sh
+            else
+              ./run_single_test.sh "$TEST_CASE"
+            fi
+        env:
+          TEST_CASE: ${{ inputs.test_case }}
 
       - name: Check test results and fail if any test failed
         if: ${{ always() }}
         run: |
-          echo "========== Full run_tests.sh output =========="
+          echo "========== Full test output =========="
           echo "${{ steps.ssh_run.outputs.stdout }}"
 
           echo
           echo "========== Test Summary Section =========="
-          echo "${{ steps.ssh_run.outputs.stdout }}" | sed -n '/^=\\{20\\} TEST SUMMARY =\\{20\\}$/,/^=\\{20\\}$/p' || echo "Summary section not found"
+          echo "${{ steps.ssh_run.outputs.stdout }}" | sed -n '/^=\{15,\} TEST SUMMARY =\{15,\}$/,/^=\{15,\}$/p' || echo "Summary section not found"
 
           # Fail if any test failed
           if echo "${{ steps.ssh_run.outputs.stdout }}" | grep -qP '\tFAILED\b'; then
