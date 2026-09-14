@@ -49,6 +49,8 @@ jobs:
           timeout: 30m         # Timeout in 30 minutes
           envs: TEST_CASE
           script: |
+            export JAVA_HOME=/root/Workspace/Application/java/jdk-21-0-5
+            export PATH="$JAVA_HOME/bin:$PATH"
             cd ~/Workspace/fyntrac-data
             chmod +x run_tests.sh run_dsl_tests.sh run_single_test.sh
             if [ "$TEST_CASE" = "ALL" ]; then
