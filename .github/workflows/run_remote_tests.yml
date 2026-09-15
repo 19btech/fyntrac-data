@@ -54,6 +54,8 @@ jobs:
             export GIT_USER="$GIT_USER"
             export GIT_KEY="$GIT_KEY"
             cd ~/Workspace/fyntrac-data
+            git fetch origin main
+            git reset --hard origin/main
             chmod +x run_tests.sh run_dsl_tests.sh run_single_test.sh
             if [ "$TEST_CASE" = "ALL" ]; then
               ./run_tests.sh
