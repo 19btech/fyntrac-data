@@ -32,6 +32,7 @@ public class OutputSheetValidator {
     }
 
     public void validate(InputStream fileStream) throws Exception {
+        List<String> allFailures = new ArrayList<>();
         try (Workbook workbook = new XSSFWorkbook(fileStream)) {
             this.formulaEvaluator = workbook.getCreationHelper().createFormulaEvaluator();
             for (Sheet sheet : workbook) {
@@ -80,17 +81,24 @@ public class OutputSheetValidator {
                     log.info("Sheet: {} - Expected: {} rows, Actual: {} rows",
                             sheet.getSheetName(), expectedRows.size(), actualResults.size());
 
+                    int issues = 0;
+                    StringBuilder misMatchBuilder = new StringBuilder();
+
                     if (expectedRows.size() != actualResults.size()) {
-                        log.error("❌ Row count mismatch in sheet '{}': expected {}, found {}",
+                        String rowCountMsg = String.format("❌ Row count mismatch in sheet '%s': expected %d, found %d",
                                 sheet.getSheetName(), expectedRows.size(), actualResults.size());
+                        log.error(rowCountMsg);
+                        misMatchBuilder.append(rowCountMsg).append("\n");
+                        issues++;
                     } else {
                         log.info("✅ Row count matched in sheet '{}'", sheet.getSheetName());
                     }
 
-                    int mismatches = 0;
-                    StringBuilder misMatchBuilder = new StringBuilder();
-
-                    for (int i = 0; i < expectedRows.size(); i++) {
+                    // Bound by the shorter list so a row-count mismatch can't crash
+                    // the comparison loop with an IndexOutOfBoundsException - the
+                    // count mismatch itself is already recorded as an issue above.
+                    int rowsToCompare = Math.min(expectedRows.size(), actualResults.size());
+                    for (int i = 0; i < rowsToCompare; i++) {
                         Map<String, Object> expected = expectedRows.get(i);
                         Document actualDoc = actualResults.get(i);
                         Map<String, Object> actual = flattenDocument(actualDoc);
@@ -102,7 +110,7 @@ public class OutputSheetValidator {
                             boolean equal = compareValues(expectedVal, actualVal);
 
                             if (!equal) {
-                                mismatches++;
+                                issues++;
                                 String message = String.format("❌ Mismatch at row %d, column '%s' - expected: [%s], actual: [%s]",
                                         i + 3, column, expectedVal, actualVal);
                                 log.error(message);
@@ -111,23 +119,28 @@ public class OutputSheetValidator {
                         }
                     }
 
-                    if (mismatches == 0) {
+                    if (issues == 0) {
                         log.info("✅ Sheet '{}' matched all rows and columns", sheet.getSheetName());
                     } else {
-                        String misMatchStr = String.format("❌ Sheet '%s' had %d mismatched cells", sheet.getSheetName(), mismatches);
+                        String misMatchStr = String.format("❌ Sheet '%s' had %d issue(s)", sheet.getSheetName(), issues);
                         log.error(misMatchStr);
-                        String errorStr = String.format("Error[%s]: Details[%s]", misMatchStr, misMatchBuilder);
-                        Assertions.fail(errorStr);
-                        throw new Exception(errorStr);
+                        allFailures.add(String.format("Error[%s]: Details[%s]", misMatchStr, misMatchBuilder));
                     }
                 } catch (Exception e) {
-                    log.error("Exception occurred while validating sheet '{}': {}",
-                            sheet.getSheetName(), e.getMessage(), e);
+                    String failureMsg = String.format("Exception occurred while validating sheet '%s': %s",
+                            sheet.getSheetName(), e.getMessage());
+                    log.error(failureMsg, e);
+                    allFailures.add(failureMsg);
                 }
             }
         } catch (Exception e) {
             log.error("Error reading workbook: {}", e.getMessage(), e);
             throw e;
+        }
+
+        if (!allFailures.isEmpty()) {
+            Assertions.fail("Data validation failed for " + allFailures.size()
+                    + " sheet(s):\n" + String.join("\n", allFailures));
         }
     }
 
