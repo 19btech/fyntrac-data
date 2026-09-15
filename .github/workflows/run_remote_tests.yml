@@ -47,10 +47,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           timeout: 30m         # Timeout in 30 minutes
-          envs: TEST_CASE
+          envs: TEST_CASE,GIT_USER,GIT_KEY
           script: |
             export JAVA_HOME=/root/Workspace/Application/java/jdk-21-0-5
             export PATH="$JAVA_HOME/bin:$PATH"
+            export GIT_USER="$GIT_USER"
+            export GIT_KEY="$GIT_KEY"
             cd ~/Workspace/fyntrac-data
             chmod +x run_tests.sh run_dsl_tests.sh run_single_test.sh
             if [ "$TEST_CASE" = "ALL" ]; then
@@ -61,6 +63,8 @@ jobs:
             fi
         env:
           TEST_CASE: ${{ inputs.test_case }}
+          GIT_USER: ${{ secrets.GIT_USER }}
+          GIT_KEY: ${{ secrets.GIT_KEY }}
 
       - name: Check test results and fail if any test failed
         if: ${{ always() }}
