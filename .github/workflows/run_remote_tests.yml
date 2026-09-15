@@ -13,6 +13,9 @@ on:
         default: "ALL"
         type: choice
         options:
+          # BEGIN AUTO-GENERATED TEST CASES - do not edit by hand, see
+          # .github/scripts/sync_test_case_dropdown.py and the
+          # "Sync Test Case Dropdown" workflow that regenerates this block.
           - ALL
           - Hearst
           - IFRS9_Stage3
@@ -27,12 +30,14 @@ on:
           - TestRevenue_DSL
           - TestSBO
           - TestSBO_DSL
+          - TestSBO_DSL_TMP
           - TestSBO_Replay_M1
           - TestSBO_Replay_M1_DSL
           - TestSBO_Replay_M2
           - TestSBO_Replay_M2_DSL
           - TestSBO_Replay_Monthly
           - TestSBO_Replay_Monthly_RC
+          # END AUTO-GENERATED TEST CASES
 
 jobs:
   run-tests:
