@@ -73,7 +73,7 @@ ORIGINAL_DB_NAME=$(basename "$SRC_DIR")
 mongorestore --uri="${MONGO_URI}" \
     --nsFrom="${ORIGINAL_DB_NAME}.*" \
     --nsTo="${TARGET_DB}.*" \
-    --dir="$SRC_DIR" \
+    --dir="$TMP_DIR" \
     --drop
 
 echo "Done. Data restored into database: $TARGET_DB"
