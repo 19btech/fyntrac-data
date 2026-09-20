@@ -49,11 +49,16 @@ public class ExcelTestDriver {
     private String tenantId;
     private static final String TEST_TENANT_ID_PROPERTY_NAME = "test.tenantId";
     private static final String TEST_STEP_FILE= "test.steps.file";
+    private static final String TEST_RESET_DB_PROPERTY = "test.reset.database";
+    // System-property overrides (wired from gradle -PtestSteps / -PresetDb, see build.gradle)
+    private static final String TEST_STEPS_OVERRIDE = "testSteps";
+    private static final String TEST_RESET_DB_OVERRIDE = "resetDb";
     private static final String TEST_DATA_FOLDER= "testData";
     private static final String TEST_ACCOUNTING_PERIOD_START_DATE="test.accounting.period.start";
     private static final String TEST_DATALOADER_URI_PROPERTY="test.dataloader.uri";
     private static final String TES_MODEL_URI_PROPERTY="test.model.uri=http";
     private static String testData;
+    private static String stepsFile;
     private static String dataLoaderURI;
     private static String modelURI;
     Properties properties = new Properties();
@@ -87,14 +92,24 @@ public class ExcelTestDriver {
         if (tenantId == null || tenantId.isEmpty()) {
             throw new IllegalStateException("Missing required property: " + TEST_TENANT_ID_PROPERTY_NAME);
         }
-        this.dataService.truncateDatabase(tenantId);
 
         dataLoaderURI= properties.getProperty(TEST_DATALOADER_URI_PROPERTY);
         modelURI = properties.getProperty(TES_MODEL_URI_PROPERTY);
 
-        String strDate = properties.getProperty(TEST_ACCOUNTING_PERIOD_START_DATE);
-        Date accountingPeriodDate = com.fyntrac.common.utils.DateUtil.parseDate(strDate, DateTimeFormatter.ofPattern("MM/dd/yyyy"));
-        generateAccountingPeriod(accountingPeriodDate);
+        // A long scenario is split into several step workbooks run one after another: the first
+        // resets the tenant (drops every collection, so it must also carry the reference/config
+        // steps), later ones continue on the state the previous piece left behind. Re-seeding the
+        // fiscal period on a continuation would reset the accounting-period state the earlier
+        // piece advanced, so it is gated together with the drop.
+        stepsFile = resolveSetting(TEST_STEPS_OVERRIDE, TEST_STEP_FILE, "Test.xlsx");
+        boolean resetDatabase = Boolean.parseBoolean(resolveSetting(TEST_RESET_DB_OVERRIDE, TEST_RESET_DB_PROPERTY, "true"));
+        System.out.printf("Test driver: tenant=%s steps=%s/%s resetDatabase=%s%n", tenantId, testData, stepsFile, resetDatabase);
+        if (resetDatabase) {
+            this.dataService.truncateDatabase(tenantId);
+            String strDate = properties.getProperty(TEST_ACCOUNTING_PERIOD_START_DATE);
+            Date accountingPeriodDate = com.fyntrac.common.utils.DateUtil.parseDate(strDate, DateTimeFormatter.ofPattern("MM/dd/yyyy"));
+            generateAccountingPeriod(accountingPeriodDate);
+        }
         // this.dataService.setTenantId(tenantId);
         this.model=null;
         String testingKey = String.format("TesingKey%d", System.currentTimeMillis());
@@ -120,7 +135,7 @@ public class ExcelTestDriver {
     }
 
     private void executeSteps() throws Throwable {
-        String testFile = String.format("%s/%s",testData,this.properties.getProperty(TEST_STEP_FILE));
+        String testFile = String.format("%s/%s", testData, stepsFile);
         InputStream fileStream = this.readFile(testFile);
         List<Records.ExcelTestStepRecord> steps = readTestSteps(fileStream);
 
@@ -232,6 +247,13 @@ public class ExcelTestDriver {
         }else {
             throw new RuntimeException("Event configuration step fails");
         }
+    }
+
+    /** System property (gradle -P override) wins over test.properties, which wins over the default. */
+    private String resolveSetting(String systemPropertyName, String propertyName, String defaultValue) {
+        String override = System.getProperty(systemPropertyName);
+        if (override != null && !override.isBlank()) return override.trim();
+        return properties.getProperty(propertyName, defaultValue).trim();
     }
 
     private InputStream readFile(String fileName) throws IOException{

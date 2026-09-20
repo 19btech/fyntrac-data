@@ -59,7 +59,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'com.fyntrac:commons:0.0.2-SNAPSHOT'
+	implementation 'com.fyntrac:commons:0.0.4-SNAPSHOT'
 	implementation 'org.apache.poi:poi:5.4.1'
 	// implementation 'org.apache.poi:poi-ooxml:5.3.0'
 	implementation 'org.apache.poi:poi-ooxml:5.4.1'
@@ -88,6 +88,15 @@ tasks.named('test') {
 
 	if (project.hasProperty('testData')) {
 		systemProperty 'testData', project.testData
+	}
+	// Optional per-run overrides of test.properties (see ExcelTestDriver.setUp):
+	//   -PtestSteps=Test_P2.xlsx   step workbook inside the testData folder
+	//   -PresetDb=false            continue on the tenant's existing data instead of dropping it
+	if (project.hasProperty('testSteps')) {
+		systemProperty 'testSteps', project.testSteps
+	}
+	if (project.hasProperty('resetDb')) {
+		systemProperty 'resetDb', project.resetDb
 	}
 
 	// Enable debug when system property is passed
