@@ -1,0 +1,2408 @@
+{
+  "fyn_version": "1.0",
+  "type": "custom",
+  "exported_at": "2026-09-21T09:11:54.012Z",
+  "template": {
+    "name": "Hearst_FinalV13",
+    "description": "",
+    "category": "User Created",
+    "rules": [
+      {
+        "name": "REVREC_Revenue_Recognition",
+        "priority": 110,
+        "ruleType": "schedule",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## REVREC_REVENUE_RECOGNITION\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = SALE_ORDER_DETAILS.postingdate\neffectivedate = SALE_ORDER_DETAILS.postingdate\nsubinstrumentid = collect_by_instrument(SALE_ORDER_DETAILS.subinstrumentid)\nregister_ssp = collect_all(SSP_RULE.ssp_amount)\nregister_balance = collect_by_instrument(REVENUE_BALANCE.BALANCES_ENDINGBALANCE_TOTAL_REVENUE)\ncat_product = collect_all('SSP_RULE_product_code')\ncat_policy = collect_all('SSP_RULE_standalone_price_policy')\ncat_ssp_amount = collect_all('SSP_RULE_ssp_amount')\ncat_method = collect_all('SSP_RULE_recognition_method')\nline_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')\nline_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')\nline_starts = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_START_DATE_CURRENT')\nline_ends = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_END_DATE_CURRENT')\nmissing_order_terms = if(eq(array_length(subinstrumentid), 0), 1, 0)\nline_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')\nbal_subids = collect_by_instrument('REVENUE_BALANCE_subinstrumentid')\nbal_amounts = collect_by_instrument('REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE')\nboarding_month_end = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT')\nregister_delivery = collect_by_instrument(PROF_SERVICE_DELIVERY.units_delivered)\npdel_subids = collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')\npdel_units = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')\npdel_postings = collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')\n## Iteration\ncur_delivery_units = apply_each(subinstrumentid, \"sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"pdel_subids\": pdel_subids, \"pdel_units\": pdel_units, \"pdel_postings\": pdel_postings})\n\n## Iteration\nline_policies = apply_each(subinstrumentid, \"lookup(cat_policy, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_policy\": cat_policy, \"line_products\": line_products})\n\n## Iteration\nline_ssp_dollar = apply_each(subinstrumentid, \"lookup(cat_ssp_amount, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_ssp_amount\": cat_ssp_amount, \"line_products\": line_products})\n\n## Iteration\nline_methods = apply_each(subinstrumentid, \"lookup(cat_method, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_method\": cat_method, \"line_products\": line_products})\n\n## Iteration\nline_ssp_amounts = apply_each(subinstrumentid, \"if(eq(lookup(line_policies, subinstrumentid, each), \\\"DOLLAR_AMOUNT\\\"), lookup(line_ssp_dollar, subinstrumentid, each), lookup(line_sale_prices, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_policies\": line_policies, \"line_ssp_dollar\": line_ssp_dollar})\n\nline_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')\nline_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')\n## Iteration\nline_is_credit = apply_each(subinstrumentid, \"if(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_inv\": line_inv, \"line_refinv\": line_refinv})\n\n## Iteration\nline_sale_price_nc = apply_each(subinstrumentid, \"multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_ssp_nc = apply_each(subinstrumentid, \"multiply(lookup(line_ssp_amounts, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit})\n\ntotal_sale_price = sum(line_sale_price_nc)\ntotal_ssp = sum(line_ssp_nc)\n## Iteration\nline_ratios = apply_each(subinstrumentid, \"if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp})\n\n## Iteration\nsub_recip = apply_each(subinstrumentid, \"divide(1, sum(eq(subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid})\n\ndistinct_prod_count = sum(sub_recip)\ntotal_ssp_d = sum(multiply(line_ssp_nc, sub_recip))\ncredit_pool_d = sum(multiply(multiply(line_sale_prices, line_is_credit), sub_recip))\n## Iteration\nline_base_alloc = apply_each(subinstrumentid, \"multiply(lookup(line_ratios, subinstrumentid, each), total_sale_price)\", {\"subinstrumentid\": subinstrumentid, \"total_sale_price\": total_sale_price, \"line_ratios\": line_ratios})\n\n## Iteration\nline_base_alloc_adj = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, subinstrumentid, each), 0)), 0), lookup(line_sale_prices, subinstrumentid, each), lookup(line_base_alloc, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp, \"distinct_prod_count\": distinct_prod_count, \"line_base_alloc\": line_base_alloc})\n\n## Iteration\nnoncredit_product_key = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), \\\"__CREDIT__\\\", lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_products\": line_products, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_allocated = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(eq(total_ssp_d, 0), 0, multiply(divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp_d), credit_pool_d)), lookup(line_base_alloc_adj, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit, \"total_ssp_d\": total_ssp_d, \"credit_pool_d\": credit_pool_d, \"line_base_alloc_adj\": line_base_alloc_adj})\n\n## Iteration\nline_balance = apply_each(subinstrumentid, \"sum(multiply(eq(bal_subids, each), bal_amounts))\", {\"subinstrumentid\": subinstrumentid, \"bal_subids\": bal_subids, \"bal_amounts\": bal_amounts})\n\nbal_postings = collect_by_instrument('REVENUE_BALANCE_postingdate')\nstale_balance_error = if(eq(array_length(bal_postings), 0), 0, if(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))\n## Iteration\nbalance_row_count = apply_each(subinstrumentid, \"sum(eq(bal_subids, each))\", {\"subinstrumentid\": subinstrumentid, \"bal_subids\": bal_subids})\n\nbalance_alignment_error = if(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)\n## Iteration\ncur_delivery_amount = apply_each(subinstrumentid, \"multiply(lookup(cur_delivery_units, subinstrumentid, each), lookup(line_allocated, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cur_delivery_units\": cur_delivery_units, \"line_allocated\": line_allocated})\n\n## Iteration\nline_remaining = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"PROPORTIONAL_PERFORMANCE\\\"), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(cur_delivery_amount, subinstrumentid, each)), if(gte(lookup(line_allocated, subinstrumentid, each), 0), max(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0), min(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0)))\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"cur_delivery_amount\": cur_delivery_amount})\n\n## Iteration\nline_po_days = apply_each(subinstrumentid, \"add(date_diff_days(lookup(line_starts, subinstrumentid, each), lookup(line_ends, subinstrumentid, each)), 1)\", {\"subinstrumentid\": subinstrumentid, \"line_starts\": line_starts, \"line_ends\": line_ends})\n\n## Iteration\nline_per_day = apply_each(subinstrumentid, \"if(eq(lookup(line_po_days, subinstrumentid, each), 0), 0, divide(lookup(line_allocated, subinstrumentid, each), lookup(line_po_days, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_allocated\": line_allocated, \"line_po_days\": line_po_days})\n\n## Iteration\nline_is_ratable = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"RATABLE\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_is_pit = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"POINT_IN_TIME\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_is_prop = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"PROPORTIONAL_PERFORMANCE\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_ends_eom = apply_each(subinstrumentid, \"end_of_month(lookup(line_ends, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends})\n\n## Schedule\np = period(line_starts, line_ends_eom, \"M\")\nrev_schedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"days_in_month\": \"add(date_diff_days(if(gt(date_diff_days(start_of_month(month_end), line_starts), 0), line_starts, start_of_month(month_end)), if(gt(date_diff_days(line_ends, month_end), 0), line_ends, month_end)), 1)\",\n    \"period_no\": \"add(period_index, 1)\",\n    \"prior_ltd_days\": \"date_diff_days(line_starts, start_of_month(month_end))\",\n    \"is_last\": \"if(eq(date_diff_days(month_end, end_of_month(line_ends)), 0), 1, 0)\",\n    \"gross_calc\": \"if(eq(line_is_ratable, 1), multiply(line_per_day, days_in_month), if(eq(line_is_pit, 1), if(eq(date_diff_days(month_end, end_of_month(line_starts)), 0), line_allocated, 0), if(eq(line_is_prop, 1), if(eq(is_last, 1), line_remaining, 0), if(eq(is_last, 1), line_allocated, 0))))\",\n    \"cum_prior\": \"lag('ltd_gross', 1, 0)\",\n    \"gross_revenue\": \"if(eq(multiply(is_last, line_is_ratable), 1), subtract(line_allocated, cum_prior), gross_calc)\",\n    \"boarding_me\": \"end_of_month(boarding_month_end)\",\n    \"pre_gross\": \"if(gt(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)\",\n    \"cum_pre\": \"add(lag('cum_pre', 1, 0), pre_gross)\",\n    \"revenue_ppa\": \"round(if(eq(date_diff_days(month_end, boarding_me), 0), lag('cum_pre', 1, 0), 0), 4)\",\n    \"revenue\": \"if(lte(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)\",\n    \"ltd_gross\": \"add(lag('ltd_gross', 1, 0), gross_revenue)\"\n}, {\"boarding_month_end\": boarding_month_end, \"line_allocated\": line_allocated, \"line_ends\": line_ends, \"line_is_pit\": line_is_pit, \"line_is_prop\": line_is_prop, \"line_is_ratable\": line_is_ratable, \"line_per_day\": line_per_day, \"line_remaining\": line_remaining, \"line_starts\": line_starts, \"item_names\": line_products})\nrev_now = schedule_filter(rev_schedule, \"month_end\", postingdate, \"revenue\")\nppa_now = schedule_filter(rev_schedule, \"month_end\", postingdate, \"revenue_ppa\")\nposted_rev_total = schedule_sum(rev_schedule, \"revenue\")\nltd_close = schedule_last(rev_schedule, \"ltd_gross\")\n\n## Iteration\nppa_amount = apply_each(subinstrumentid, \"round(lookup(ppa_now, subinstrumentid, each), 4)\", {\"subinstrumentid\": subinstrumentid, \"ppa_now\": ppa_now})\n\n## Iteration\nlate_credit_ppa = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(lookup(line_is_credit, subinstrumentid, each), 1), gt(date_diff_days(end_of_month(lookup(line_ends, subinstrumentid, each)), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), 0), lookup(line_allocated, subinstrumentid, each), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"boarding_month_end\": boarding_month_end, \"line_is_credit\": line_is_credit, \"line_allocated\": line_allocated})\n\n## Iteration\nrev_amount = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), 0), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), lookup(rev_now, subinstrumentid, each))\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"bal_subids\": bal_subids, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"line_is_ratable\": line_is_ratable, \"rev_now\": rev_now, \"ppa_amount\": ppa_amount})\n\nrecon_difference = subtract(posted_rev_total, line_allocated)\n## Iteration\nper_line_credit_err = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(gt(abs(add(lookup(line_sale_prices, subinstrumentid, each), lookup(line_sale_prices, noncredit_product_key, lookup(line_products, subinstrumentid, each)))), 0.005), 1, 0), 0)\", {\"subinstrumentid\": subinstrumentid, \"line_products\": line_products, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit, \"noncredit_product_key\": noncredit_product_key})\n\ncredit_amount_error = if(gt(sum(per_line_credit_err), 0), 1, 0)\n## Iteration\nratable_adj_ppa = apply_each(subinstrumentid, \"if(gt(multiply(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), gt(abs(subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each))), 0.005)), 0), subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"bal_subids\": bal_subids, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"line_is_ratable\": line_is_ratable, \"ppa_amount\": ppa_amount, \"rev_amount\": rev_amount})\n\n## Iteration\nppa_amount_neg = apply_each(subinstrumentid, \"multiply(add(add(lookup(ppa_amount, subinstrumentid, each), lookup(late_credit_ppa, subinstrumentid, each)), lookup(ratable_adj_ppa, subinstrumentid, each)), -1)\", {\"subinstrumentid\": subinstrumentid, \"ppa_amount\": ppa_amount, \"late_credit_ppa\": late_credit_ppa, \"ratable_adj_ppa\": ratable_adj_ppa})\n\n## Iteration\nrev_amount_neg = apply_each(subinstrumentid, \"multiply(lookup(rev_amount, subinstrumentid, each), -1)\", {\"subinstrumentid\": subinstrumentid, \"rev_amount\": rev_amount})\n\n## Iteration\nalloc_booked = apply_each(subinstrumentid, \"if(eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0), lookup(line_allocated, subinstrumentid, each), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"boarding_month_end\": boarding_month_end, \"line_allocated\": line_allocated})\n\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"Revenue\", rev_amount_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"Revenue_PPA\", ppa_amount_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"ALLOCATED_REVENUE\", alloc_booked, subinstrumentid)",
+        "variables": [
+          {
+            "name": "postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "subinstrumentid",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "register_ssp",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SSP_RULE.ssp_amount",
+            "collectType": "collect_all"
+          },
+          {
+            "name": "register_balance",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REVENUE_BALANCE.BALANCES_ENDINGBALANCE_TOTAL_REVENUE",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_product",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_product_code')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_policy",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_standalone_price_policy')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_ssp_amount",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_ssp_amount')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_method",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_recognition_method')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_products",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_sale_prices",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_starts",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_START_DATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_ends",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_END_DATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "missing_order_terms",
+            "source": "formula",
+            "formula": "if(eq(array_length(subinstrumentid), 0), 1, 0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_postings",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "bal_subids",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "bal_amounts",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "boarding_month_end",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "register_delivery",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.units_delivered",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_subids",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_units",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_postings",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_inv",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_refinv",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "total_sale_price",
+            "source": "formula",
+            "formula": "sum(line_sale_price_nc)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "total_ssp",
+            "source": "formula",
+            "formula": "sum(line_ssp_nc)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "distinct_prod_count",
+            "source": "formula",
+            "formula": "sum(sub_recip)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "total_ssp_d",
+            "source": "formula",
+            "formula": "sum(multiply(line_ssp_nc, sub_recip))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "credit_pool_d",
+            "source": "formula",
+            "formula": "sum(multiply(multiply(line_sale_prices, line_is_credit), sub_recip))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "bal_postings",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "stale_balance_error",
+            "source": "formula",
+            "formula": "if(eq(array_length(bal_postings), 0), 0, if(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "balance_alignment_error",
+            "source": "formula",
+            "formula": "if(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "recon_difference",
+            "source": "formula",
+            "formula": "subtract(posted_rev_total, line_allocated)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "credit_amount_error",
+            "source": "formula",
+            "formula": "if(gt(sum(per_line_credit_err), 0), 1, 0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [
+          {
+            "expression": "sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))",
+            "resultVar": "cur_delivery_units",
+            "sourceArray": "subinstrumentid",
+            "type": "apply_each",
+            "varName": "each"
+          }
+        ],
+        "iterConfig": {
+          "expression": "sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))",
+          "resultVar": "cur_delivery_units",
+          "sourceArray": "subinstrumentid",
+          "type": "apply_each",
+          "varName": "each"
+        },
+        "outputs": {
+          "printResult": false,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "amount": "rev_amount_neg",
+              "effectiveDate": "effectivedate",
+              "postingDate": "postingdate",
+              "subInstrumentId": "subinstrumentid",
+              "type": "Revenue"
+            },
+            {
+              "amount": "ppa_amount_neg",
+              "effectiveDate": "effectivedate",
+              "postingDate": "postingdate",
+              "subInstrumentId": "subinstrumentid",
+              "type": "Revenue_PPA"
+            },
+            {
+              "type": "ALLOCATED_REVENUE",
+              "amount": "alloc_booked",
+              "postingDate": "postingdate",
+              "effectiveDate": "effectivedate",
+              "subInstrumentId": "subinstrumentid"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "id": "ff2c1c4d-da3c-4b7b-adb3-0f2621f5cd47",
+            "name": "postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.postingdate",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "230e547d-eb0b-49c9-a321-2e341846bed9",
+            "name": "effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.postingdate",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "5005e9fb-9573-44d4-8346-5b453d65d9eb",
+            "name": "subinstrumentid",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.subinstrumentid",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "7eae59bd-0fea-4665-9f16-eca02ade8acf",
+            "name": "register_ssp",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SSP_RULE.ssp_amount",
+            "collectType": "collect_all",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "26c1cc00-0968-4149-89a4-f342f6db24ec",
+            "name": "register_balance",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "REVENUE_BALANCE.BALANCES_ENDINGBALANCE_TOTAL_REVENUE",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "5aec9af7-1fe9-4703-a12f-e8e53097eeb5",
+            "name": "cat_product",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_product_code')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "3f960023-ac95-4b16-9ca7-82fcbfe0b578",
+            "name": "cat_policy",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_standalone_price_policy')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "d1c801a3-798f-46fc-a90c-1697397fcd35",
+            "name": "cat_ssp_amount",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_ssp_amount')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "8b4442d3-9a8f-41e9-b454-60f8cc2bac6c",
+            "name": "cat_method",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_recognition_method')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "fbef0ec3-6935-4cb7-aabd-2f64ed620b0e",
+            "name": "line_products",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "1ddd2c9f-c75a-4e78-b89a-0a280d18b21c",
+            "name": "line_sale_prices",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "b799033e-45b2-4faa-8601-0aa741a4cc37",
+            "name": "line_starts",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_START_DATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "b18c0191-09b9-48c8-a9e6-98b0d45a842f",
+            "name": "line_ends",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_END_DATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "68e949b1-dcde-47ca-9db8-9030da613953",
+            "name": "missing_order_terms",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(eq(array_length(subinstrumentid), 0), 1, 0)",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "f854aa4b-35d1-4094-b1ee-dd2f74636d97",
+            "name": "line_postings",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "a9bf6cb6-b3eb-4e21-ba91-9deb251e43eb",
+            "name": "bal_subids",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "c8cdc043-f7f2-4fbb-8740-93c91f1522d8",
+            "name": "bal_amounts",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "71151054-53b8-4303-b981-94541af77309",
+            "name": "boarding_month_end",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "05ca1d73-914e-4894-8def-920a8fb1e308",
+            "name": "register_delivery",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.units_delivered",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "34aa0593-7627-476a-9f50-7d4e78b97a46",
+            "name": "pdel_subids",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "a20cb008-12aa-4a4a-879d-dc689d86bda9",
+            "name": "pdel_units",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "a1c01ea6-98e3-44e4-b4a4-f0ea84c5e525",
+            "name": "pdel_postings",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "e0637bdf-357f-405d-a733-6dce52aa54d5",
+            "name": "cur_delivery_units",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))",
+                "resultVar": "cur_delivery_units",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "d6c9c281-c2fb-46cb-987d-28d3ea73d048",
+            "name": "line_policies",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(cat_policy, cat_product, lookup(line_products, subinstrumentid, each))",
+                "resultVar": "line_policies",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "4ba23289-e1d2-4fe4-ada0-94f4c2beee17",
+            "name": "line_ssp_dollar",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(cat_ssp_amount, cat_product, lookup(line_products, subinstrumentid, each))",
+                "resultVar": "line_ssp_dollar",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "77879831-24e6-4ef8-86a6-bcbf3b04b5de",
+            "name": "line_methods",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(cat_method, cat_product, lookup(line_products, subinstrumentid, each))",
+                "resultVar": "line_methods",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "360160dd-0b84-4d25-880f-33cb509b4ea9",
+            "name": "line_ssp_amounts",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_policies, subinstrumentid, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, subinstrumentid, each), lookup(line_sale_prices, subinstrumentid, each))",
+                "resultVar": "line_ssp_amounts",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "ef0ebaa9-96fa-40e9-9426-bcc2f2976c2d",
+            "name": "line_inv",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "d2c5f6ba-3ea5-46ee-96af-3b048c70514c",
+            "name": "line_refinv",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "9020c47c-58ce-4dad-9990-bc3150e01f10",
+            "name": "line_is_credit",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "subinstrumentid",
+                "varName": "each",
+                "expression": "if(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)",
+                "resultVar": "line_is_credit"
+              }
+            ]
+          },
+          {
+            "id": "3d17b2b1-e081-4efb-b71f-a062585447c6",
+            "name": "line_sale_price_nc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "type": "apply_each",
+                "sourceArray": "subinstrumentid",
+                "varName": "each",
+                "expression": "multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))",
+                "resultVar": "line_sale_price_nc"
+              }
+            ]
+          },
+          {
+            "id": "00fe95c7-cf48-4395-8dfe-4a9c2e4a728c",
+            "name": "line_ssp_nc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(line_ssp_amounts, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))",
+                "resultVar": "line_ssp_nc",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "d7942949-d8c4-4e68-94eb-f1c4ab39bed5",
+            "name": "total_sale_price",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(line_sale_price_nc)",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "86537acc-7af5-4988-9eed-6a99a1a94282",
+            "name": "total_ssp",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(line_ssp_nc)",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "7e016611-44a6-433e-aa39-350f21b3f97a",
+            "name": "line_ratios",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp))",
+                "resultVar": "line_ratios",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "ebc16e24-62f7-425f-a6fb-9aa491085876",
+            "name": "sub_recip",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "divide(1, sum(eq(subinstrumentid, each)))",
+                "resultVar": "sub_recip",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "c5eff108-08b3-4391-ad79-e2c810765efb",
+            "name": "distinct_prod_count",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(sub_recip)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "abdce62a-9a5f-4494-9fed-2918adf24caa",
+            "name": "total_ssp_d",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(multiply(line_ssp_nc, sub_recip))",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "709c7b0b-aaf9-4a37-888d-7a6954738da0",
+            "name": "credit_pool_d",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(multiply(multiply(line_sale_prices, line_is_credit), sub_recip))",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "7b3cb1bb-c0d8-42bf-ad77-c5ca4f591cdc",
+            "name": "line_base_alloc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(line_ratios, subinstrumentid, each), total_sale_price)",
+                "resultVar": "line_base_alloc",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": true
+          },
+          {
+            "id": "1dc38225-73b3-44fe-83d1-a97f8d30e233",
+            "name": "line_base_alloc_adj",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, subinstrumentid, each), 0)), 0), lookup(line_sale_prices, subinstrumentid, each), lookup(line_base_alloc, subinstrumentid, each))",
+                "resultVar": "line_base_alloc_adj",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "d46de78b-ed67-4823-835a-2616fd3e80b8",
+            "name": "noncredit_product_key",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_is_credit, subinstrumentid, each), 1), \"__CREDIT__\", lookup(line_products, subinstrumentid, each))",
+                "resultVar": "noncredit_product_key",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "3c03b2da-59a0-44e9-8ae6-576f6c826b03",
+            "name": "line_allocated",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(eq(total_ssp_d, 0), 0, multiply(divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp_d), credit_pool_d)), lookup(line_base_alloc_adj, subinstrumentid, each))",
+                "resultVar": "line_allocated",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "b0a7cb5f-4d66-42db-8645-8d19fb047844",
+            "name": "line_balance",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "sum(multiply(eq(bal_subids, each), bal_amounts))",
+                "resultVar": "line_balance",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "keyed by sub-id, not positional; yields 0 when a line has no balance row yet",
+            "printResult": false
+          },
+          {
+            "id": "4fcd460a-7b2c-4204-802a-9ca799e61d36",
+            "name": "bal_postings",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('REVENUE_BALANCE_postingdate')",
+            "value": "",
+            "eventField": "",
+            "commentText": "posting date carried on this instrument's balance rows"
+          },
+          {
+            "id": "e22ce518-75d4-4fae-b7c3-6cce32e50cfe",
+            "name": "stale_balance_error",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(eq(array_length(bal_postings), 0), 0, if(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))",
+            "value": "",
+            "eventField": "",
+            "commentText": "CONTROL - 1 when a balance row exists but is not for this posting period, i.e. the prior period's balance was never written. Must be 0.",
+            "printResult": true
+          },
+          {
+            "id": "46d7d512-f479-4066-a938-259d43979b95",
+            "name": "balance_row_count",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "sum(eq(bal_subids, each))",
+                "resultVar": "balance_row_count",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "commentText": "count of balance rows matching each order line - must be 1 (or 0 before the first balance is written). 2+ means duplicates are double-counting the balance.",
+            "printResult": false
+          },
+          {
+            "id": "5a545be1-de2e-46c6-8535-77be71e0b12b",
+            "name": "balance_alignment_error",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)",
+            "value": "",
+            "eventField": "",
+            "commentText": "CONTROL - 1 when any order line has more than one balance row, i.e. the balance feed has duplicates. Must be 0.",
+            "printResult": true
+          },
+          {
+            "id": "ea4c35ef-947a-49d0-8fab-771ddd867d07",
+            "name": "cur_delivery_amount",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(cur_delivery_units, subinstrumentid, each), lookup(line_allocated, subinstrumentid, each))",
+                "resultVar": "cur_delivery_amount",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "e82eab77-0f2b-497d-8294-043a14f04892",
+            "name": "line_remaining",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(cur_delivery_amount, subinstrumentid, each)), if(gte(lookup(line_allocated, subinstrumentid, each), 0), max(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0), min(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0)))",
+                "resultVar": "line_remaining",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "printResult": true
+          },
+          {
+            "id": "71480db9-b4e6-48a9-826a-3e7192d807bb",
+            "name": "line_po_days",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "add(date_diff_days(lookup(line_starts, subinstrumentid, each), lookup(line_ends, subinstrumentid, each)), 1)",
+                "resultVar": "line_po_days",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "f7589e97-e90a-4855-8a8e-8bc131125046",
+            "name": "line_per_day",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_po_days, subinstrumentid, each), 0), 0, divide(lookup(line_allocated, subinstrumentid, each), lookup(line_po_days, subinstrumentid, each)))",
+                "resultVar": "line_per_day",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "3463fe38-553c-492b-a0ab-d8933dfc70e7",
+            "name": "line_is_ratable",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_methods, subinstrumentid, each), \"RATABLE\"), 1, 0)",
+                "resultVar": "line_is_ratable",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "a03b3b65-aa32-44a0-8317-52b2ea493199",
+            "name": "line_is_pit",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_methods, subinstrumentid, each), \"POINT_IN_TIME\"), 1, 0)",
+                "resultVar": "line_is_pit",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "4c0eb53c-7930-4eff-b5af-18cc04e1bb86",
+            "name": "line_is_prop",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_methods, subinstrumentid, each), \"PROPORTIONAL_PERFORMANCE\"), 1, 0)",
+                "resultVar": "line_is_prop",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "d96b3e1d-93a9-4081-886a-0b4b36af74d1",
+            "name": "line_ends_eom",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "end_of_month(lookup(line_ends, subinstrumentid, each))",
+                "resultVar": "line_ends_eom",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "2d89ca2e-73f4-404e-9666-d0f99b8b2cc4",
+            "name": "rev_schedule",
+            "stepType": "schedule",
+            "scheduleConfig": {
+              "periodType": "date",
+              "startDate": "",
+              "startDateSource": "formula",
+              "startDateField": "",
+              "startDateFormula": "line_starts",
+              "endDate": "",
+              "endDateSource": "formula",
+              "endDateField": "",
+              "endDateFormula": "line_ends_eom",
+              "periodCount": "12",
+              "periodCountSource": "value",
+              "periodCountField": "",
+              "periodCountFormula": "",
+              "frequency": "M",
+              "convention": "",
+              "columns": [
+                {
+                  "name": "period_date",
+                  "formula": "period_date"
+                },
+                {
+                  "formula": "end_of_month(period_date)",
+                  "name": "month_end"
+                },
+                {
+                  "formula": "add(date_diff_days(if(gt(date_diff_days(start_of_month(month_end), line_starts), 0), line_starts, start_of_month(month_end)), if(gt(date_diff_days(line_ends, month_end), 0), line_ends, month_end)), 1)",
+                  "name": "days_in_month",
+                  "commentText": "days of service falling in this month - prorated for mid-month start or end"
+                },
+                {
+                  "formula": "add(period_index, 1)",
+                  "name": "period_no"
+                },
+                {
+                  "formula": "date_diff_days(line_starts, start_of_month(month_end))",
+                  "name": "prior_ltd_days"
+                },
+                {
+                  "formula": "if(eq(date_diff_days(month_end, end_of_month(line_ends)), 0), 1, 0)",
+                  "name": "is_last"
+                },
+                {
+                  "formula": "if(eq(line_is_ratable, 1), multiply(line_per_day, days_in_month), if(eq(line_is_pit, 1), if(eq(date_diff_days(month_end, end_of_month(line_starts)), 0), line_allocated, 0), if(eq(line_is_prop, 1), if(eq(is_last, 1), line_remaining, 0), if(eq(is_last, 1), line_allocated, 0))))",
+                  "name": "gross_calc",
+                  "commentText": "RATABLE = per-day x days of service in this month (no duration column). POINT_IN_TIME = full amount in the month containing service start. PROPORTIONAL = remaining balance at service end."
+                },
+                {
+                  "formula": "lag('ltd_gross', 1, 0)",
+                  "name": "cum_prior"
+                },
+                {
+                  "formula": "if(eq(multiply(is_last, line_is_ratable), 1), subtract(line_allocated, cum_prior), gross_calc)",
+                  "name": "gross_revenue"
+                },
+                {
+                  "formula": "end_of_month(boarding_month_end)",
+                  "name": "boarding_me"
+                },
+                {
+                  "formula": "if(gt(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",
+                  "name": "pre_gross"
+                },
+                {
+                  "formula": "add(lag('cum_pre', 1, 0), pre_gross)",
+                  "name": "cum_pre"
+                },
+                {
+                  "formula": "round(if(eq(date_diff_days(month_end, boarding_me), 0), lag('cum_pre', 1, 0), 0), 4)",
+                  "name": "revenue_ppa"
+                },
+                {
+                  "formula": "if(lte(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)",
+                  "name": "revenue"
+                },
+                {
+                  "formula": "add(lag('ltd_gross', 1, 0), gross_revenue)",
+                  "name": "ltd_gross"
+                }
+              ],
+              "outputs": [
+                {
+                  "id": "o_1789167075256_0",
+                  "type": "filter",
+                  "name": "rev_now",
+                  "column": "revenue",
+                  "matchCol": "month_end",
+                  "matchValue": "postingdate"
+                },
+                {
+                  "id": "o_1789167075256_1",
+                  "type": "filter",
+                  "name": "ppa_now",
+                  "column": "revenue_ppa",
+                  "matchCol": "month_end",
+                  "matchValue": "postingdate"
+                },
+                {
+                  "id": "o_1789167075256_2",
+                  "type": "sum",
+                  "name": "posted_rev_total",
+                  "column": "revenue",
+                  "matchCol": "",
+                  "matchValue": ""
+                },
+                {
+                  "id": "o_1789167075256_3",
+                  "type": "last",
+                  "name": "ltd_close",
+                  "column": "ltd_gross",
+                  "matchCol": "",
+                  "matchValue": ""
+                }
+              ],
+              "contextVars": [
+                "boarding_month_end",
+                "line_allocated",
+                "line_ends",
+                "line_is_pit",
+                "line_is_prop",
+                "line_is_ratable",
+                "line_per_day",
+                "line_remaining",
+                "line_starts"
+              ],
+              "itemNames": "line_products"
+            },
+            "outputVars": [
+              {
+                "name": "rev_now",
+                "type": "filter",
+                "column": "revenue",
+                "matchCol": "month_end",
+                "matchValue": "postingdate"
+              },
+              {
+                "name": "ppa_now",
+                "type": "filter",
+                "column": "revenue_ppa",
+                "matchCol": "month_end",
+                "matchValue": "postingdate"
+              },
+              {
+                "name": "posted_rev_total",
+                "type": "sum",
+                "column": "revenue"
+              },
+              {
+                "name": "ltd_close",
+                "type": "last",
+                "column": "ltd_gross"
+              }
+            ]
+          },
+          {
+            "id": "8122fe70-dac4-4482-8cad-8bdaf1b7ff44",
+            "name": "ppa_amount",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "round(lookup(ppa_now, subinstrumentid, each), 4)",
+                "resultVar": "ppa_amount",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "ecfe30c3-a8d2-47a4-ae1c-bfa2779a2634",
+            "name": "late_credit_ppa",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(multiply(multiply(eq(lookup(line_is_credit, subinstrumentid, each), 1), gt(date_diff_days(end_of_month(lookup(line_ends, subinstrumentid, each)), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), 0), lookup(line_allocated, subinstrumentid, each), 0)",
+                "resultVar": "late_credit_ppa",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "1c01a574-09fc-41fc-bbbd-276841281342",
+            "name": "rev_amount",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), 0), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), lookup(rev_now, subinstrumentid, each))",
+                "resultVar": "rev_amount",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "888bb9cf-68c4-4a45-ba26-d7ecf5fc65ae",
+            "name": "recon_difference",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "subtract(posted_rev_total, line_allocated)",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "cc0dbe7d-8728-4eac-91d4-04120d967f2e",
+            "name": "per_line_credit_err",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(gt(abs(add(lookup(line_sale_prices, subinstrumentid, each), lookup(line_sale_prices, noncredit_product_key, lookup(line_products, subinstrumentid, each)))), 0.005), 1, 0), 0)",
+                "resultVar": "per_line_credit_err",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "7a675809-b6dc-43e9-a096-19b6268fa988",
+            "name": "credit_amount_error",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(gt(sum(per_line_credit_err), 0), 1, 0)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "2b362e3f-d18c-47d5-a1b1-709e7285a119",
+            "name": "ratable_adj_ppa",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(multiply(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), gt(abs(subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each))), 0.005)), 0), subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), 0)",
+                "resultVar": "ratable_adj_ppa",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "71561d14-461c-402d-ada6-46f450b09426",
+            "name": "ppa_amount_neg",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(add(add(lookup(ppa_amount, subinstrumentid, each), lookup(late_credit_ppa, subinstrumentid, each)), lookup(ratable_adj_ppa, subinstrumentid, each)), -1)",
+                "resultVar": "ppa_amount_neg",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "f0cfaec5-91df-41e0-b2a5-ace3ff9e8b36",
+            "name": "rev_amount_neg",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(rev_amount, subinstrumentid, each), -1)",
+                "resultVar": "rev_amount_neg",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "3942031a-accd-4ae4-aca4-86f5f605a29b",
+            "name": "alloc_booked",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0), lookup(line_allocated, subinstrumentid, each), 0)",
+                "resultVar": "alloc_booked",
+                "sourceArray": "subinstrumentid",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "REVREC_Billing",
+        "priority": 130,
+        "ruleType": "simple_calc",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## REVREC_BILLING\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = BILLING_SCHEDULE.postingdate\neffectivedate = BILLING_SCHEDULE.effectivedate\nsubinstrumentid = collect_by_instrument(BILLING_SCHEDULE.subinstrumentid)\nbilling_amount = collect_by_instrument('BILLING_SCHEDULE_billing_amount')\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"NEW_BILLING\", billing_amount, subinstrumentid)",
+        "variables": [
+          {
+            "name": "postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "subinstrumentid",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "billing_amount",
+            "source": "formula",
+            "formula": "collect_by_instrument('BILLING_SCHEDULE_billing_amount')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [],
+        "iterConfig": {},
+        "outputs": {
+          "transactions": [
+            {
+              "type": "NEW_BILLING",
+              "amount": "billing_amount",
+              "postingDate": "postingdate",
+              "effectiveDate": "effectivedate",
+              "subInstrumentId": "subinstrumentid"
+            }
+          ],
+          "createTransaction": true
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "id": "21ba66dd-2666-4243-adaf-494e79f1848f",
+            "name": "postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.postingdate"
+          },
+          {
+            "id": "b56a0ba4-a394-469f-a0aa-367c93af69c1",
+            "name": "effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.effectivedate"
+          },
+          {
+            "id": "3810a408-a82f-4a87-9af0-f5aa830194af",
+            "name": "subinstrumentid",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "BILLING_SCHEDULE.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "0897e0ef-c2d9-47bc-a4e1-73b5e9a0763f",
+            "name": "billing_amount",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('BILLING_SCHEDULE_billing_amount')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ]
+      },
+      {
+        "name": "REVREC_Proportional_Delivery",
+        "priority": 120,
+        "ruleType": "iteration",
+        "generatedCode": "## ═══════════════════════════════════════════════════════════════\n## REVREC_PROPORTIONAL_DELIVERY\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = PROF_SERVICE_DELIVERY.postingdate\neffectivedate = PROF_SERVICE_DELIVERY.postingdate\ndelivery_effdate = PROF_SERVICE_DELIVERY.effectivedate\nsubinstrumentid = PROF_SERVICE_DELIVERY.subinstrumentid\nthis_sub = PROF_SERVICE_DELIVERY.subinstrumentid\nunits = PROF_SERVICE_DELIVERY.units_delivered\nconcat_key = concat(instrumentid, this_sub)\npdel_ids = collect_by_instrument('PROF_SERVICE_DELIVERY_service_delivery_id')\npdel_subids = collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')\npdel_units = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')\npdel_postings = collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')\npdel_effdates = collect_by_instrument('PROF_SERVICE_DELIVERY_effectivedate')\nregister_ssp = collect_all(SSP_RULE.ssp_amount)\nregister_so = collect_by_instrument(SALE_ORDER_DETAILS.ATTRIBUTE_SALE_PRICE_CURRENT)\ncat_product = collect_all('SSP_RULE_product_code')\ncat_policy = collect_all('SSP_RULE_standalone_price_policy')\ncat_ssp_amount = collect_all('SSP_RULE_ssp_amount')\nline_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')\nline_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')\nline_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')\nline_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')\nboarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))\n## Iteration\nline_policies = apply_each(line_products, \"lookup(cat_policy, cat_product, each)\", {\"cat_product\": cat_product, \"cat_policy\": cat_policy, \"line_products\": line_products})\n\n## Iteration\nline_ssp_dollar = apply_each(line_products, \"lookup(cat_ssp_amount, cat_product, each)\", {\"cat_product\": cat_product, \"cat_ssp_amount\": cat_ssp_amount, \"line_products\": line_products})\n\n## Iteration\nline_ssp_amounts = apply_each(line_products, \"if(eq(lookup(line_policies, line_products, each), \\\"DOLLAR_AMOUNT\\\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))\", {\"line_products\": line_products, \"line_sale_prices\": line_sale_prices, \"line_policies\": line_policies, \"line_ssp_dollar\": line_ssp_dollar})\n\nline_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')\nline_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')\n## Iteration\nline_is_credit = apply_each(line_sub_ids, \"if(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)\", {\"line_sub_ids\": line_sub_ids, \"line_inv\": line_inv, \"line_refinv\": line_refinv})\n\n## Iteration\nline_sale_price_nc = apply_each(line_sub_ids, \"multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_ssp_nc = apply_each(line_sub_ids, \"multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit})\n\ntotal_sale_price = sum(line_sale_price_nc)\ntotal_ssp = sum(line_ssp_nc)\n## Iteration\nline_ratios = apply_each(line_sub_ids, \"if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))\", {\"line_sub_ids\": line_sub_ids, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp})\n\n## Iteration\nsub_recip = apply_each(line_sub_ids, \"divide(1, sum(eq(line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids})\n\ndistinct_prod_count = sum(sub_recip)\n## Iteration\nline_base_alloc = apply_each(line_sub_ids, \"round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)\", {\"line_sub_ids\": line_sub_ids, \"total_sale_price\": total_sale_price, \"line_ratios\": line_ratios})\n\n## Iteration\nline_base_alloc_adj = apply_each(line_sub_ids, \"if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, line_sub_ids, each), 0)), 0), lookup(line_sale_prices, line_sub_ids, each), lookup(line_base_alloc, line_sub_ids, each))\", {\"line_sub_ids\": line_sub_ids, \"line_sale_prices\": line_sale_prices, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp, \"distinct_prod_count\": distinct_prod_count, \"line_base_alloc\": line_base_alloc})\n\n## Iteration\nnoncredit_product_key = apply_each(line_sub_ids, \"if(eq(lookup(line_is_credit, line_sub_ids, each), 1), \\\"__CREDIT__\\\", lookup(line_products, line_sub_ids, each))\", {\"line_products\": line_products, \"line_sub_ids\": line_sub_ids, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_allocated = apply_each(line_sub_ids, \"if(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc_adj, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc_adj, line_sub_ids, each))\", {\"line_products\": line_products, \"line_sub_ids\": line_sub_ids, \"line_is_credit\": line_is_credit, \"line_base_alloc_adj\": line_base_alloc_adj, \"noncredit_product_key\": noncredit_product_key})\n\nallocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)\ndelivery_amount = round(multiply(units, allocated_for_line), 4)\ndelivery_ppa = if(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)\ndelivery_revenue = if(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)\ndelivery_ppa_neg = multiply(delivery_ppa, -1)\ndelivery_revenue_neg = multiply(delivery_revenue, -1)\n## Iteration\ndel_amount = apply_each(pdel_ids, \"round(multiply(multiply(lookup(pdel_units, pdel_ids, each), lookup(line_allocated, line_sub_ids, lookup(pdel_subids, pdel_ids, each))), if(eq(lookup(pdel_postings, pdel_ids, each), postingdate), 1, 0)), 4)\", {\"postingdate\": postingdate, \"pdel_ids\": pdel_ids, \"pdel_subids\": pdel_subids, \"pdel_units\": pdel_units, \"pdel_postings\": pdel_postings, \"line_sub_ids\": line_sub_ids, \"line_allocated\": line_allocated})\n\n## Iteration\ndel_ispast = apply_each(pdel_ids, \"if(gt(date_diff_days(end_of_month(lookup(pdel_effdates, pdel_ids, each)), end_of_month(postingdate)), 0), 1, 0)\", {\"postingdate\": postingdate, \"pdel_ids\": pdel_ids, \"pdel_effdates\": pdel_effdates})\n\n## Iteration\ndel_subs = apply_each(pdel_ids, \"lookup(pdel_subids, pdel_ids, each)\", {\"pdel_ids\": pdel_ids, \"pdel_subids\": pdel_subids})\n\n## Iteration\ndel_ppa_neg = apply_each(pdel_ids, \"multiply(multiply(lookup(del_amount, pdel_ids, each), lookup(del_ispast, pdel_ids, each)), -1)\", {\"pdel_ids\": pdel_ids, \"del_amount\": del_amount, \"del_ispast\": del_ispast})\n\n## Iteration\ndel_rev_neg = apply_each(pdel_ids, \"multiply(multiply(lookup(del_amount, pdel_ids, each), subtract(1, lookup(del_ispast, pdel_ids, each))), -1)\", {\"pdel_ids\": pdel_ids, \"del_amount\": del_amount, \"del_ispast\": del_ispast})\n\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"Revenue\", del_rev_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"Revenue_PPA\", del_ppa_neg, subinstrumentid)",
+        "variables": [
+          {
+            "name": "postingdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "effectivedate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.postingdate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_effdate",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.effectivedate",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "subinstrumentid",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "this_sub",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.subinstrumentid",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "units",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.units_delivered",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "concat_key",
+            "source": "formula",
+            "formula": "concat(instrumentid, this_sub)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_ids",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_service_delivery_id')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_subids",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_units",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_postings",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "pdel_effdates",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_effectivedate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "register_ssp",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SSP_RULE.ssp_amount",
+            "collectType": "collect_all"
+          },
+          {
+            "name": "register_so",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.ATTRIBUTE_SALE_PRICE_CURRENT",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_product",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_product_code')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_policy",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_standalone_price_policy')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "cat_ssp_amount",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_ssp_amount')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_products",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_sub_ids",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_sale_prices",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_postings",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "boarding_month_end",
+            "source": "formula",
+            "formula": "end_of_month(array_get(line_postings, 0, postingdate))",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_inv",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "line_refinv",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "total_sale_price",
+            "source": "formula",
+            "formula": "sum(line_sale_price_nc)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "total_ssp",
+            "source": "formula",
+            "formula": "sum(line_ssp_nc)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "distinct_prod_count",
+            "source": "formula",
+            "formula": "sum(sub_recip)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "allocated_for_line",
+            "source": "formula",
+            "formula": "lookup(line_allocated, line_sub_ids, this_sub)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_amount",
+            "source": "formula",
+            "formula": "round(multiply(units, allocated_for_line), 4)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_ppa",
+            "source": "formula",
+            "formula": "if(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_revenue",
+            "source": "formula",
+            "formula": "if(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_ppa_neg",
+            "source": "formula",
+            "formula": "multiply(delivery_ppa, -1)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "name": "delivery_revenue_neg",
+            "source": "formula",
+            "formula": "multiply(delivery_revenue, -1)",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          }
+        ],
+        "conditions": [],
+        "elseFormula": "",
+        "conditionResultVar": "result",
+        "iterations": [
+          {
+            "expression": "lookup(cat_policy, cat_product, each)",
+            "resultVar": "line_policies",
+            "sourceArray": "line_products",
+            "type": "apply_each",
+            "varName": "each"
+          }
+        ],
+        "iterConfig": {
+          "expression": "lookup(cat_policy, cat_product, each)",
+          "resultVar": "line_policies",
+          "sourceArray": "line_products",
+          "type": "apply_each",
+          "varName": "each"
+        },
+        "outputs": {
+          "printResult": true,
+          "createTransaction": true,
+          "transactions": [
+            {
+              "amount": "del_rev_neg",
+              "effectiveDate": "effectivedate",
+              "postingDate": "postingdate",
+              "subInstrumentId": "subinstrumentid",
+              "type": "Revenue"
+            },
+            {
+              "amount": "del_ppa_neg",
+              "effectiveDate": "effectivedate",
+              "postingDate": "postingdate",
+              "subInstrumentId": "subinstrumentid",
+              "type": "Revenue_PPA"
+            }
+          ]
+        },
+        "customCode": "",
+        "steps": [
+          {
+            "id": "b7c055ab-b5a1-40c9-af70-4b436031a708",
+            "name": "postingdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.postingdate",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "964f004d-28e1-431d-8486-d375c2af7cf4",
+            "name": "effectivedate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.postingdate"
+          },
+          {
+            "id": "84e791fe-537e-4d12-be3d-dfb8f505deaa",
+            "name": "delivery_effdate",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.effectivedate"
+          },
+          {
+            "id": "0fec6aa2-e104-4afb-afc4-7719cc1b844a",
+            "name": "subinstrumentid",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.subinstrumentid",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "9b853350-4cd7-4163-b909-d75da4116454",
+            "name": "this_sub",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.subinstrumentid",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "1abdcd03-af11-4978-b8af-dab09b9298c5",
+            "name": "units",
+            "stepType": "calc",
+            "source": "event_field",
+            "formula": "",
+            "value": "",
+            "eventField": "PROF_SERVICE_DELIVERY.units_delivered",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "410a1807-0628-47a3-a0eb-43943df43a5f",
+            "name": "concat_key",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "concat(instrumentid, this_sub)",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "f79cd2a0-a2c1-4ed3-8960-57690ea1a698",
+            "name": "pdel_ids",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_service_delivery_id')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "ef2bd3a1-83d5-49e1-8611-ea88027d3fcd",
+            "name": "pdel_subids",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "492314e6-332f-41da-8287-e87d43319b58",
+            "name": "pdel_units",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "0e20ffce-34cb-4efb-bd2d-75f922b77082",
+            "name": "pdel_postings",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "d1864f0a-3a02-4c44-ba92-2bbcc78e49ac",
+            "name": "pdel_effdates",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('PROF_SERVICE_DELIVERY_effectivedate')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "e0dfe318-1a76-46b9-aa44-9b67276a0ef8",
+            "name": "register_ssp",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SSP_RULE.ssp_amount",
+            "collectType": "collect_all",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "442b523a-f98f-4931-a705-284eb1ffa2a1",
+            "name": "register_so",
+            "stepType": "calc",
+            "source": "collect",
+            "formula": "",
+            "value": "",
+            "eventField": "SALE_ORDER_DETAILS.ATTRIBUTE_SALE_PRICE_CURRENT",
+            "collectType": "collect_by_instrument",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "0302cdc5-307e-4f24-ba5e-5072951786b2",
+            "name": "cat_product",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_product_code')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "9d30cfc3-fc1a-41a4-9f84-4d1f4dbcd325",
+            "name": "cat_policy",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_standalone_price_policy')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "04634df7-8be5-48a9-8a1d-6479562a5844",
+            "name": "cat_ssp_amount",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_all('SSP_RULE_ssp_amount')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "c5b55adf-ce48-46d7-838b-ef4ab84a01eb",
+            "name": "line_products",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "5df98115-c2ac-4182-ae12-d1219639106c",
+            "name": "line_sub_ids",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "21e0365c-7e01-4343-9bc6-3769bffa3fd8",
+            "name": "line_sale_prices",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "6376b334-6123-4363-b9c5-b843bb72b2ec",
+            "name": "line_postings",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_postingdate')",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "5fa5c76b-c0d5-4415-952b-f72608957e46",
+            "name": "boarding_month_end",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "end_of_month(array_get(line_postings, 0, postingdate))",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "88987263-e199-42d7-9532-3067daba68dd",
+            "name": "line_policies",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(cat_policy, cat_product, each)",
+                "resultVar": "line_policies",
+                "sourceArray": "line_products",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "a47132ae-5a38-41d1-b730-dac821258636",
+            "name": "line_ssp_dollar",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(cat_ssp_amount, cat_product, each)",
+                "resultVar": "line_ssp_dollar",
+                "sourceArray": "line_products",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "f9a69f7f-0b6f-45cd-bc9e-9c39cad629e0",
+            "name": "line_ssp_amounts",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_policies, line_products, each), \"DOLLAR_AMOUNT\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))",
+                "resultVar": "line_ssp_amounts",
+                "sourceArray": "line_products",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "f1c419da-6209-49b1-8cc5-e9576755f77b",
+            "name": "line_inv",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "01f01a37-4cd7-41a6-8020-2d3127fd1adc",
+            "name": "line_refinv",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')",
+            "value": "",
+            "eventField": "",
+            "collectType": "collect_by_instrument"
+          },
+          {
+            "id": "6f5ae4fa-e21e-4c7f-88f1-a7d0531ed50a",
+            "name": "line_is_credit",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)",
+                "resultVar": "line_is_credit",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "7ae0681b-42b4-41e1-ae34-11b407430b90",
+            "name": "line_sale_price_nc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))",
+                "resultVar": "line_sale_price_nc",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "55ef493c-be73-4ba1-83da-42ca72a9550f",
+            "name": "line_ssp_nc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))",
+                "resultVar": "line_ssp_nc",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "72acce17-da39-446b-aa3c-fffcd36a1905",
+            "name": "total_sale_price",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(line_sale_price_nc)",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "c839b1fe-5bda-4a59-a88d-873018a80002",
+            "name": "total_ssp",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(line_ssp_nc)",
+            "value": "",
+            "eventField": "",
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "44effa04-b214-499f-92d3-5566d4139ce1",
+            "name": "line_ratios",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))",
+                "resultVar": "line_ratios",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "96d349f7-56bc-4d08-8502-43a90a2f685e",
+            "name": "sub_recip",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "divide(1, sum(eq(line_sub_ids, each)))",
+                "resultVar": "sub_recip",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "7b97245e-30ea-421b-a0ec-e7834bd644bf",
+            "name": "distinct_prod_count",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "sum(sub_recip)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "a6fc7a8d-1297-4c5e-af5d-b8640a6d43f3",
+            "name": "line_base_alloc",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)",
+                "resultVar": "line_base_alloc",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "ea6e59a3-ff9f-408a-b699-4152f1b9507f",
+            "name": "line_base_alloc_adj",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, line_sub_ids, each), 0)), 0), lookup(line_sale_prices, line_sub_ids, each), lookup(line_base_alloc, line_sub_ids, each))",
+                "resultVar": "line_base_alloc_adj",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "4b5fbd7f-033a-4250-94a6-fedf144e0194",
+            "name": "noncredit_product_key",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_is_credit, line_sub_ids, each), 1), \"__CREDIT__\", lookup(line_products, line_sub_ids, each))",
+                "resultVar": "noncredit_product_key",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "066a26e0-4f79-4c9c-a73b-a4eaae2f187c",
+            "name": "line_allocated",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc_adj, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc_adj, line_sub_ids, each))",
+                "resultVar": "line_allocated",
+                "sourceArray": "line_sub_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ],
+            "inlineComment": false,
+            "commentText": "",
+            "printResult": false
+          },
+          {
+            "id": "003f3da8-e103-449e-a731-cd4dc5988784",
+            "name": "allocated_for_line",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "lookup(line_allocated, line_sub_ids, this_sub)",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "a9d6f084-ada3-4e02-b08a-e2a7f1ead65b",
+            "name": "delivery_amount",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "round(multiply(units, allocated_for_line), 4)",
+            "value": "",
+            "eventField": "",
+            "printResult": false,
+            "inlineComment": false,
+            "commentText": ""
+          },
+          {
+            "id": "5b424081-d26c-4c6e-aeb9-4e5a11a4dbb0",
+            "name": "delivery_ppa",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "fcbb558e-dcae-410b-bb3d-8c9f221731be",
+            "name": "delivery_revenue",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "if(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "382776e5-fe5d-468b-9311-33bb3662a964",
+            "name": "delivery_ppa_neg",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "multiply(delivery_ppa, -1)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "56bfb7d5-c5fb-4a28-9ea7-cb14ed1f991e",
+            "name": "delivery_revenue_neg",
+            "stepType": "calc",
+            "source": "formula",
+            "formula": "multiply(delivery_revenue, -1)",
+            "value": "",
+            "eventField": ""
+          },
+          {
+            "id": "9c28d322-9f45-4e11-9200-418e11484a59",
+            "name": "del_amount",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "round(multiply(multiply(lookup(pdel_units, pdel_ids, each), lookup(line_allocated, line_sub_ids, lookup(pdel_subids, pdel_ids, each))), if(eq(lookup(pdel_postings, pdel_ids, each), postingdate), 1, 0)), 4)",
+                "resultVar": "del_amount",
+                "sourceArray": "pdel_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "e8af5a6b-40aa-4f9f-98db-14182127f21b",
+            "name": "del_ispast",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "if(gt(date_diff_days(end_of_month(lookup(pdel_effdates, pdel_ids, each)), end_of_month(postingdate)), 0), 1, 0)",
+                "resultVar": "del_ispast",
+                "sourceArray": "pdel_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "87eb887d-0375-42fe-b645-6ad741d42c31",
+            "name": "del_subs",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "lookup(pdel_subids, pdel_ids, each)",
+                "resultVar": "del_subs",
+                "sourceArray": "pdel_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "abfc5eb1-fc8a-4241-9a99-1ac762489b59",
+            "name": "del_ppa_neg",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(multiply(lookup(del_amount, pdel_ids, each), lookup(del_ispast, pdel_ids, each)), -1)",
+                "resultVar": "del_ppa_neg",
+                "sourceArray": "pdel_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          },
+          {
+            "id": "44c685b2-b672-4883-9586-13d1ca581625",
+            "name": "del_rev_neg",
+            "stepType": "iteration",
+            "iterations": [
+              {
+                "expression": "multiply(multiply(lookup(del_amount, pdel_ids, each), subtract(1, lookup(del_ispast, pdel_ids, each))), -1)",
+                "resultVar": "del_rev_neg",
+                "sourceArray": "pdel_ids",
+                "type": "apply_each",
+                "varName": "each"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "schedules": [],
+    "combinedCode": "## ═══════════════════════════════════════════════════════════════\n## REVREC_REVENUE_RECOGNITION\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = SALE_ORDER_DETAILS.postingdate\neffectivedate = SALE_ORDER_DETAILS.postingdate\nsubinstrumentid = collect_by_instrument(SALE_ORDER_DETAILS.subinstrumentid)\nregister_ssp = collect_all(SSP_RULE.ssp_amount)\nregister_balance = collect_by_instrument(REVENUE_BALANCE.BALANCES_ENDINGBALANCE_TOTAL_REVENUE)\ncat_product = collect_all('SSP_RULE_product_code')\ncat_policy = collect_all('SSP_RULE_standalone_price_policy')\ncat_ssp_amount = collect_all('SSP_RULE_ssp_amount')\ncat_method = collect_all('SSP_RULE_recognition_method')\nline_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')\nline_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')\nline_starts = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_START_DATE_CURRENT')\nline_ends = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SERVICE_END_DATE_CURRENT')\nmissing_order_terms = if(eq(array_length(subinstrumentid), 0), 1, 0)\nline_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')\nbal_subids = collect_by_instrument('REVENUE_BALANCE_subinstrumentid')\nbal_amounts = collect_by_instrument('REVENUE_BALANCE_BALANCES_ENDINGBALANCE_TOTAL_REVENUE')\nboarding_month_end = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_TRANSACTIONDATE_CURRENT')\nregister_delivery = collect_by_instrument(PROF_SERVICE_DELIVERY.units_delivered)\npdel_subids = collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')\npdel_units = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')\npdel_postings = collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')\n## Iteration\ncur_delivery_units = apply_each(subinstrumentid, \"sum(multiply(multiply(eq(pdel_subids, each), eq(pdel_postings, postingdate)), pdel_units))\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"pdel_subids\": pdel_subids, \"pdel_units\": pdel_units, \"pdel_postings\": pdel_postings})\n\n## Iteration\nline_policies = apply_each(subinstrumentid, \"lookup(cat_policy, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_policy\": cat_policy, \"line_products\": line_products})\n\n## Iteration\nline_ssp_dollar = apply_each(subinstrumentid, \"lookup(cat_ssp_amount, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_ssp_amount\": cat_ssp_amount, \"line_products\": line_products})\n\n## Iteration\nline_methods = apply_each(subinstrumentid, \"lookup(cat_method, cat_product, lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cat_product\": cat_product, \"cat_method\": cat_method, \"line_products\": line_products})\n\n## Iteration\nline_ssp_amounts = apply_each(subinstrumentid, \"if(eq(lookup(line_policies, subinstrumentid, each), \\\"DOLLAR_AMOUNT\\\"), lookup(line_ssp_dollar, subinstrumentid, each), lookup(line_sale_prices, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_policies\": line_policies, \"line_ssp_dollar\": line_ssp_dollar})\n\nline_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')\nline_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')\n## Iteration\nline_is_credit = apply_each(subinstrumentid, \"if(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_inv\": line_inv, \"line_refinv\": line_refinv})\n\n## Iteration\nline_sale_price_nc = apply_each(subinstrumentid, \"multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_ssp_nc = apply_each(subinstrumentid, \"multiply(lookup(line_ssp_amounts, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit})\n\ntotal_sale_price = sum(line_sale_price_nc)\ntotal_ssp = sum(line_ssp_nc)\n## Iteration\nline_ratios = apply_each(subinstrumentid, \"if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp})\n\n## Iteration\nsub_recip = apply_each(subinstrumentid, \"divide(1, sum(eq(subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid})\n\ndistinct_prod_count = sum(sub_recip)\ntotal_ssp_d = sum(multiply(line_ssp_nc, sub_recip))\ncredit_pool_d = sum(multiply(multiply(line_sale_prices, line_is_credit), sub_recip))\n## Iteration\nline_base_alloc = apply_each(subinstrumentid, \"multiply(lookup(line_ratios, subinstrumentid, each), total_sale_price)\", {\"subinstrumentid\": subinstrumentid, \"total_sale_price\": total_sale_price, \"line_ratios\": line_ratios})\n\n## Iteration\nline_base_alloc_adj = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, subinstrumentid, each), 0)), 0), lookup(line_sale_prices, subinstrumentid, each), lookup(line_base_alloc, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_sale_prices\": line_sale_prices, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp, \"distinct_prod_count\": distinct_prod_count, \"line_base_alloc\": line_base_alloc})\n\n## Iteration\nnoncredit_product_key = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), \\\"__CREDIT__\\\", lookup(line_products, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_products\": line_products, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_allocated = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(eq(total_ssp_d, 0), 0, multiply(divide(lookup(line_ssp_amounts, subinstrumentid, each), total_ssp_d), credit_pool_d)), lookup(line_base_alloc_adj, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit, \"total_ssp_d\": total_ssp_d, \"credit_pool_d\": credit_pool_d, \"line_base_alloc_adj\": line_base_alloc_adj})\n\n## Iteration\nline_balance = apply_each(subinstrumentid, \"sum(multiply(eq(bal_subids, each), bal_amounts))\", {\"subinstrumentid\": subinstrumentid, \"bal_subids\": bal_subids, \"bal_amounts\": bal_amounts})\n\nbal_postings = collect_by_instrument('REVENUE_BALANCE_postingdate')\nstale_balance_error = if(eq(array_length(bal_postings), 0), 0, if(eq(date_diff_days(array_get(bal_postings, 0, postingdate), postingdate), 0), 0, 1))\n## Iteration\nbalance_row_count = apply_each(subinstrumentid, \"sum(eq(bal_subids, each))\", {\"subinstrumentid\": subinstrumentid, \"bal_subids\": bal_subids})\n\nbalance_alignment_error = if(gt(sum(balance_row_count), array_length(bal_subids)), 1, 0)\n## Iteration\ncur_delivery_amount = apply_each(subinstrumentid, \"multiply(lookup(cur_delivery_units, subinstrumentid, each), lookup(line_allocated, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"cur_delivery_units\": cur_delivery_units, \"line_allocated\": line_allocated})\n\n## Iteration\nline_remaining = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"PROPORTIONAL_PERFORMANCE\\\"), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(cur_delivery_amount, subinstrumentid, each)), if(gte(lookup(line_allocated, subinstrumentid, each), 0), max(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0), min(subtract(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), 0)))\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"cur_delivery_amount\": cur_delivery_amount})\n\n## Iteration\nline_po_days = apply_each(subinstrumentid, \"add(date_diff_days(lookup(line_starts, subinstrumentid, each), lookup(line_ends, subinstrumentid, each)), 1)\", {\"subinstrumentid\": subinstrumentid, \"line_starts\": line_starts, \"line_ends\": line_ends})\n\n## Iteration\nline_per_day = apply_each(subinstrumentid, \"if(eq(lookup(line_po_days, subinstrumentid, each), 0), 0, divide(lookup(line_allocated, subinstrumentid, each), lookup(line_po_days, subinstrumentid, each)))\", {\"subinstrumentid\": subinstrumentid, \"line_allocated\": line_allocated, \"line_po_days\": line_po_days})\n\n## Iteration\nline_is_ratable = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"RATABLE\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_is_pit = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"POINT_IN_TIME\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_is_prop = apply_each(subinstrumentid, \"if(eq(lookup(line_methods, subinstrumentid, each), \\\"PROPORTIONAL_PERFORMANCE\\\"), 1, 0)\", {\"subinstrumentid\": subinstrumentid, \"line_methods\": line_methods})\n\n## Iteration\nline_ends_eom = apply_each(subinstrumentid, \"end_of_month(lookup(line_ends, subinstrumentid, each))\", {\"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends})\n\n## Schedule\np = period(line_starts, line_ends_eom, \"M\")\nrev_schedule = schedule(p, {\n    \"period_date\": \"period_date\",\n    \"month_end\": \"end_of_month(period_date)\",\n    \"days_in_month\": \"add(date_diff_days(if(gt(date_diff_days(start_of_month(month_end), line_starts), 0), line_starts, start_of_month(month_end)), if(gt(date_diff_days(line_ends, month_end), 0), line_ends, month_end)), 1)\",\n    \"period_no\": \"add(period_index, 1)\",\n    \"prior_ltd_days\": \"date_diff_days(line_starts, start_of_month(month_end))\",\n    \"is_last\": \"if(eq(date_diff_days(month_end, end_of_month(line_ends)), 0), 1, 0)\",\n    \"gross_calc\": \"if(eq(line_is_ratable, 1), multiply(line_per_day, days_in_month), if(eq(line_is_pit, 1), if(eq(date_diff_days(month_end, end_of_month(line_starts)), 0), line_allocated, 0), if(eq(line_is_prop, 1), if(eq(is_last, 1), line_remaining, 0), if(eq(is_last, 1), line_allocated, 0))))\",\n    \"cum_prior\": \"lag('ltd_gross', 1, 0)\",\n    \"gross_revenue\": \"if(eq(multiply(is_last, line_is_ratable), 1), subtract(line_allocated, cum_prior), gross_calc)\",\n    \"boarding_me\": \"end_of_month(boarding_month_end)\",\n    \"pre_gross\": \"if(gt(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)\",\n    \"cum_pre\": \"add(lag('cum_pre', 1, 0), pre_gross)\",\n    \"revenue_ppa\": \"round(if(eq(date_diff_days(month_end, boarding_me), 0), lag('cum_pre', 1, 0), 0), 4)\",\n    \"revenue\": \"if(lte(date_diff_days(month_end, boarding_me), 0), gross_revenue, 0)\",\n    \"ltd_gross\": \"add(lag('ltd_gross', 1, 0), gross_revenue)\"\n}, {\"boarding_month_end\": boarding_month_end, \"line_allocated\": line_allocated, \"line_ends\": line_ends, \"line_is_pit\": line_is_pit, \"line_is_prop\": line_is_prop, \"line_is_ratable\": line_is_ratable, \"line_per_day\": line_per_day, \"line_remaining\": line_remaining, \"line_starts\": line_starts, \"item_names\": line_products})\nrev_now = schedule_filter(rev_schedule, \"month_end\", postingdate, \"revenue\")\nppa_now = schedule_filter(rev_schedule, \"month_end\", postingdate, \"revenue_ppa\")\nposted_rev_total = schedule_sum(rev_schedule, \"revenue\")\nltd_close = schedule_last(rev_schedule, \"ltd_gross\")\n\n## Iteration\nppa_amount = apply_each(subinstrumentid, \"round(lookup(ppa_now, subinstrumentid, each), 4)\", {\"subinstrumentid\": subinstrumentid, \"ppa_now\": ppa_now})\n\n## Iteration\nlate_credit_ppa = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(lookup(line_is_credit, subinstrumentid, each), 1), gt(date_diff_days(end_of_month(lookup(line_ends, subinstrumentid, each)), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0)), 0), lookup(line_allocated, subinstrumentid, each), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"boarding_month_end\": boarding_month_end, \"line_is_credit\": line_is_credit, \"line_allocated\": line_allocated})\n\n## Iteration\nrev_amount = apply_each(subinstrumentid, \"if(gt(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), 0), subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), lookup(rev_now, subinstrumentid, each))\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"bal_subids\": bal_subids, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"line_is_ratable\": line_is_ratable, \"rev_now\": rev_now, \"ppa_amount\": ppa_amount})\n\nrecon_difference = subtract(posted_rev_total, line_allocated)\n## Iteration\nper_line_credit_err = apply_each(subinstrumentid, \"if(eq(lookup(line_is_credit, subinstrumentid, each), 1), if(gt(abs(add(lookup(line_sale_prices, subinstrumentid, each), lookup(line_sale_prices, noncredit_product_key, lookup(line_products, subinstrumentid, each)))), 0.005), 1, 0), 0)\", {\"subinstrumentid\": subinstrumentid, \"line_products\": line_products, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit, \"noncredit_product_key\": noncredit_product_key})\n\ncredit_amount_error = if(gt(sum(per_line_credit_err), 0), 1, 0)\n## Iteration\nratable_adj_ppa = apply_each(subinstrumentid, \"if(gt(multiply(multiply(multiply(eq(lookup(line_is_ratable, subinstrumentid, each), 1), eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(line_ends, subinstrumentid, each))), 0)), gt(array_length(bal_subids), 0)), gt(abs(subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each))), 0.005)), 0), subtract(subtract(add(lookup(line_allocated, subinstrumentid, each), lookup(line_balance, subinstrumentid, each)), lookup(rev_amount, subinstrumentid, each)), lookup(ppa_amount, subinstrumentid, each)), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"line_ends\": line_ends, \"bal_subids\": bal_subids, \"line_allocated\": line_allocated, \"line_balance\": line_balance, \"line_is_ratable\": line_is_ratable, \"ppa_amount\": ppa_amount, \"rev_amount\": rev_amount})\n\n## Iteration\nppa_amount_neg = apply_each(subinstrumentid, \"multiply(add(add(lookup(ppa_amount, subinstrumentid, each), lookup(late_credit_ppa, subinstrumentid, each)), lookup(ratable_adj_ppa, subinstrumentid, each)), -1)\", {\"subinstrumentid\": subinstrumentid, \"ppa_amount\": ppa_amount, \"late_credit_ppa\": late_credit_ppa, \"ratable_adj_ppa\": ratable_adj_ppa})\n\n## Iteration\nrev_amount_neg = apply_each(subinstrumentid, \"multiply(lookup(rev_amount, subinstrumentid, each), -1)\", {\"subinstrumentid\": subinstrumentid, \"rev_amount\": rev_amount})\n\n## Iteration\nalloc_booked = apply_each(subinstrumentid, \"if(eq(date_diff_days(end_of_month(postingdate), end_of_month(lookup(boarding_month_end, subinstrumentid, each))), 0), lookup(line_allocated, subinstrumentid, each), 0)\", {\"postingdate\": postingdate, \"subinstrumentid\": subinstrumentid, \"boarding_month_end\": boarding_month_end, \"line_allocated\": line_allocated})\n\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"Revenue\", rev_amount_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"Revenue_PPA\", ppa_amount_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"ALLOCATED_REVENUE\", alloc_booked, subinstrumentid)\n\n## ═══════════════════════════════════════════════════════════════\n## REVREC_PROPORTIONAL_DELIVERY\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = PROF_SERVICE_DELIVERY.postingdate\neffectivedate = PROF_SERVICE_DELIVERY.postingdate\ndelivery_effdate = PROF_SERVICE_DELIVERY.effectivedate\nsubinstrumentid = PROF_SERVICE_DELIVERY.subinstrumentid\nthis_sub = PROF_SERVICE_DELIVERY.subinstrumentid\nunits = PROF_SERVICE_DELIVERY.units_delivered\nconcat_key = concat(instrumentid, this_sub)\npdel_ids = collect_by_instrument('PROF_SERVICE_DELIVERY_service_delivery_id')\npdel_subids = collect_by_instrument('PROF_SERVICE_DELIVERY_subinstrumentid')\npdel_units = collect_by_instrument('PROF_SERVICE_DELIVERY_units_delivered')\npdel_postings = collect_by_instrument('PROF_SERVICE_DELIVERY_postingdate')\npdel_effdates = collect_by_instrument('PROF_SERVICE_DELIVERY_effectivedate')\nregister_ssp = collect_all(SSP_RULE.ssp_amount)\nregister_so = collect_by_instrument(SALE_ORDER_DETAILS.ATTRIBUTE_SALE_PRICE_CURRENT)\ncat_product = collect_all('SSP_RULE_product_code')\ncat_policy = collect_all('SSP_RULE_standalone_price_policy')\ncat_ssp_amount = collect_all('SSP_RULE_ssp_amount')\nline_products = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_PRODUCT_ID_CURRENT')\nline_sub_ids = collect_by_instrument('SALE_ORDER_DETAILS_subinstrumentid')\nline_sale_prices = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_SALE_PRICE_CURRENT')\nline_postings = collect_by_instrument('SALE_ORDER_DETAILS_postingdate')\nboarding_month_end = end_of_month(array_get(line_postings, 0, postingdate))\n## Iteration\nline_policies = apply_each(line_products, \"lookup(cat_policy, cat_product, each)\", {\"cat_product\": cat_product, \"cat_policy\": cat_policy, \"line_products\": line_products})\n\n## Iteration\nline_ssp_dollar = apply_each(line_products, \"lookup(cat_ssp_amount, cat_product, each)\", {\"cat_product\": cat_product, \"cat_ssp_amount\": cat_ssp_amount, \"line_products\": line_products})\n\n## Iteration\nline_ssp_amounts = apply_each(line_products, \"if(eq(lookup(line_policies, line_products, each), \\\"DOLLAR_AMOUNT\\\"), lookup(line_ssp_dollar, line_products, each), lookup(line_sale_prices, line_products, each))\", {\"line_products\": line_products, \"line_sale_prices\": line_sale_prices, \"line_policies\": line_policies, \"line_ssp_dollar\": line_ssp_dollar})\n\nline_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')\nline_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')\n## Iteration\nline_is_credit = apply_each(line_sub_ids, \"if(neq(lookup(line_inv, line_sub_ids, each), lookup(line_refinv, line_sub_ids, each)), 1, 0)\", {\"line_sub_ids\": line_sub_ids, \"line_inv\": line_inv, \"line_refinv\": line_refinv})\n\n## Iteration\nline_sale_price_nc = apply_each(line_sub_ids, \"multiply(lookup(line_sale_prices, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids, \"line_sale_prices\": line_sale_prices, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_ssp_nc = apply_each(line_sub_ids, \"multiply(lookup(line_ssp_amounts, line_sub_ids, each), subtract(1, lookup(line_is_credit, line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids, \"line_ssp_amounts\": line_ssp_amounts, \"line_is_credit\": line_is_credit})\n\ntotal_sale_price = sum(line_sale_price_nc)\ntotal_ssp = sum(line_ssp_nc)\n## Iteration\nline_ratios = apply_each(line_sub_ids, \"if(eq(total_ssp, 0), 0, divide(lookup(line_ssp_amounts, line_sub_ids, each), total_ssp))\", {\"line_sub_ids\": line_sub_ids, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp})\n\n## Iteration\nsub_recip = apply_each(line_sub_ids, \"divide(1, sum(eq(line_sub_ids, each)))\", {\"line_sub_ids\": line_sub_ids})\n\ndistinct_prod_count = sum(sub_recip)\n## Iteration\nline_base_alloc = apply_each(line_sub_ids, \"round(multiply(lookup(line_ratios, line_sub_ids, each), total_sale_price), 2)\", {\"line_sub_ids\": line_sub_ids, \"total_sale_price\": total_sale_price, \"line_ratios\": line_ratios})\n\n## Iteration\nline_base_alloc_adj = apply_each(line_sub_ids, \"if(gt(multiply(multiply(eq(total_ssp, 0), eq(distinct_prod_count, 1)), eq(lookup(line_ssp_amounts, line_sub_ids, each), 0)), 0), lookup(line_sale_prices, line_sub_ids, each), lookup(line_base_alloc, line_sub_ids, each))\", {\"line_sub_ids\": line_sub_ids, \"line_sale_prices\": line_sale_prices, \"line_ssp_amounts\": line_ssp_amounts, \"total_ssp\": total_ssp, \"distinct_prod_count\": distinct_prod_count, \"line_base_alloc\": line_base_alloc})\n\n## Iteration\nnoncredit_product_key = apply_each(line_sub_ids, \"if(eq(lookup(line_is_credit, line_sub_ids, each), 1), \\\"__CREDIT__\\\", lookup(line_products, line_sub_ids, each))\", {\"line_products\": line_products, \"line_sub_ids\": line_sub_ids, \"line_is_credit\": line_is_credit})\n\n## Iteration\nline_allocated = apply_each(line_sub_ids, \"if(eq(lookup(line_is_credit, line_sub_ids, each), 1), subtract(0, lookup(line_base_alloc_adj, noncredit_product_key, lookup(line_products, line_sub_ids, each))), lookup(line_base_alloc_adj, line_sub_ids, each))\", {\"line_products\": line_products, \"line_sub_ids\": line_sub_ids, \"line_is_credit\": line_is_credit, \"line_base_alloc_adj\": line_base_alloc_adj, \"noncredit_product_key\": noncredit_product_key})\n\nallocated_for_line = lookup(line_allocated, line_sub_ids, this_sub)\ndelivery_amount = round(multiply(units, allocated_for_line), 4)\ndelivery_ppa = if(gt(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)\ndelivery_revenue = if(lte(date_diff_days(end_of_month(delivery_effdate), end_of_month(postingdate)), 0), delivery_amount, 0)\ndelivery_ppa_neg = multiply(delivery_ppa, -1)\ndelivery_revenue_neg = multiply(delivery_revenue, -1)\n## Iteration\ndel_amount = apply_each(pdel_ids, \"round(multiply(multiply(lookup(pdel_units, pdel_ids, each), lookup(line_allocated, line_sub_ids, lookup(pdel_subids, pdel_ids, each))), if(eq(lookup(pdel_postings, pdel_ids, each), postingdate), 1, 0)), 4)\", {\"postingdate\": postingdate, \"pdel_ids\": pdel_ids, \"pdel_subids\": pdel_subids, \"pdel_units\": pdel_units, \"pdel_postings\": pdel_postings, \"line_sub_ids\": line_sub_ids, \"line_allocated\": line_allocated})\n\n## Iteration\ndel_ispast = apply_each(pdel_ids, \"if(gt(date_diff_days(end_of_month(lookup(pdel_effdates, pdel_ids, each)), end_of_month(postingdate)), 0), 1, 0)\", {\"postingdate\": postingdate, \"pdel_ids\": pdel_ids, \"pdel_effdates\": pdel_effdates})\n\n## Iteration\ndel_subs = apply_each(pdel_ids, \"lookup(pdel_subids, pdel_ids, each)\", {\"pdel_ids\": pdel_ids, \"pdel_subids\": pdel_subids})\n\n## Iteration\ndel_ppa_neg = apply_each(pdel_ids, \"multiply(multiply(lookup(del_amount, pdel_ids, each), lookup(del_ispast, pdel_ids, each)), -1)\", {\"pdel_ids\": pdel_ids, \"del_amount\": del_amount, \"del_ispast\": del_ispast})\n\n## Iteration\ndel_rev_neg = apply_each(pdel_ids, \"multiply(multiply(lookup(del_amount, pdel_ids, each), subtract(1, lookup(del_ispast, pdel_ids, each))), -1)\", {\"pdel_ids\": pdel_ids, \"del_amount\": del_amount, \"del_ispast\": del_ispast})\n\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"Revenue\", del_rev_neg, subinstrumentid)\ncreateTransaction(postingdate, effectivedate, \"Revenue_PPA\", del_ppa_neg, subinstrumentid)\n\n## ═══════════════════════════════════════════════════════════════\n## REVREC_BILLING\n## ═══════════════════════════════════════════════════════════════\n\n## Steps\npostingdate = BILLING_SCHEDULE.postingdate\neffectivedate = BILLING_SCHEDULE.effectivedate\nsubinstrumentid = collect_by_instrument(BILLING_SCHEDULE.subinstrumentid)\nbilling_amount = collect_by_instrument('BILLING_SCHEDULE_billing_amount')\n\n## Create Transactions\ncreateTransaction(postingdate, effectivedate, \"NEW_BILLING\", billing_amount, subinstrumentid)",
+    "created_at": "2026-09-21T09:11:46.667156+00:00",
+    "updated_at": "2026-09-21T09:11:46.667156+00:00"
+  }
+}
