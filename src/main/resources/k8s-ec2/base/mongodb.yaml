@@ -17,7 +17,13 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: mongo:8.2
+          # 7.0, not 8.x: on the EC2 host (Ubuntu kernel 7.0.0-1006-aws) every mongo 8.2 build --
+          # including the exact digest that runs fine on the local Fedora k3s -- dies with exit 139
+          # ~60s after start, with no clients, on a fresh volume, at any cache size, and without
+          # logging a crash report. Suspected cause: 8.x's rseq-based tcmalloc vs. this kernel
+          # (GLIBC_TUNABLES=glibc.pthread.rseq=0 did not help). 7.0 (older tcmalloc) is stable.
+          # Moving back to 8.x needs a different kernel; data written by 8.x can't be opened by 7.0.
+          image: mongo:7.0
           # `args`, not `command` — command would override the image's ENTRYPOINT
           # (docker-entrypoint.sh), which is what applies --bind_ip_all and runs the
           # MONGO_INITDB_ROOT_* user bootstrap. Overriding it left mongod listening
