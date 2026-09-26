@@ -724,7 +724,7 @@ def process_event_data(event_data, raw_event_data=None, override_postingdate=Non
         line_inv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:47
         line_refinv = collect_by_instrument('SALE_ORDER_DETAILS_ATTRIBUTE_REFERENCE_INVOICE_NUMBER_CURRENT')  # DSL_LINE:48
         ## Iteration
-        line_is_credit = apply_each(subinstrumentid, "iif(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, iif(lt(lookup(line_sale_prices, subinstrumentid, each), 0), 1, 0))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:50
+        line_is_credit = apply_each(subinstrumentid, "iif(neq(lookup(line_inv, subinstrumentid, each), lookup(line_refinv, subinstrumentid, each)), 1, 0)", {"subinstrumentid": subinstrumentid, "line_inv": line_inv, "line_refinv": line_refinv})  # DSL_LINE:50
 
         ## Iteration
         line_sale_price_nc = apply_each(subinstrumentid, "multiply(lookup(line_sale_prices, subinstrumentid, each), subtract(1, lookup(line_is_credit, subinstrumentid, each)))", {"subinstrumentid": subinstrumentid, "line_sale_prices": line_sale_prices, "line_is_credit": line_is_credit})  # DSL_LINE:53
