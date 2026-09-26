@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulsar
+  namespace: fyntrac
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: pulsar
+  template:
+    metadata:
+      labels:
+        app: pulsar
+    spec:
+      # Pulsar's embedded BookKeeper storage on the PVC below does not reliably survive an
+      # ungraceful shutdown (e.g. the dev machine rebooting kills this container without time
+      # to flush its journal/ledgers) — this shows up as "Bookie handle is not available"
+      # on the next start and the broker never becomes ready, which then cascades into
+      # dataloader/gl/model/dsl-model crash-looping since they can't reach Pulsar either.
+      # Queued/in-flight Pulsar messages in this local dev cluster are disposable (consumers
+      # just re-process once services are back up), so instead of trying to make the shutdown
+      # perfectly graceful, every pod start wipes the data directory first and Pulsar always
+      # comes up from a clean slate.
+      initContainers:
+        - name: reset-pulsar-data
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Clearing Pulsar data directory for a clean start (Pulsar data is disposable in this environment)"
+              rm -rf /pulsar/data/* /pulsar/data/..?* /pulsar/data/.[!.]* 2>/dev/null || true
+          volumeMounts:
+            - name: data
+              mountPath: /pulsar/data
+      containers:
+        - name: pulsar
+          image: apachepulsar/pulsar:3.3.5
+          command: ["bin/pulsar", "standalone", "--no-functions-worker", "--no-stream-storage"]
+          env:
+            - name: PULSAR_MEM
+              value: " -Xms1g -Xmx1g -XX:MaxDirectMemorySize=2g"
+            - name: PULSAR_PREFIX_enableTransaction
+              value: "true"
+          ports:
+            - containerPort: 6650
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /pulsar/data
+          readinessProbe:
+            httpGet:
+              path: /admin/v2/brokers/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          # No liveness probe previously: a broker stuck in a bad state (e.g. the same
+          # bookie-corruption failure mode) just sat there forever, never ready and never
+          # restarted. This gives it a chance to self-heal via the reset-pulsar-data
+          # initContainer above on the next restart.
+          livenessProbe:
+            httpGet:
+              path: /admin/v2/brokers/health
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: "250m"
+              # Must stay above PULSAR_MEM's -Xmx512m + MaxDirectMemorySize=1g (1.5Gi already,
+              # before JVM metaspace/thread-stack overhead), or the scheduler under-provisions
+              # this pod relative to what the JVM is actually configured to use.
+              # EC2: PULSAR_MEM is -Xmx1g + MaxDirectMemorySize=2g.
+              memory: "3Gi"
+            limits:
+              # No limit previously meant this container had no cgroup cap of its own,
+              # leaving it able to contribute to node-wide OOM pressure instead of hitting
+              # its own ceiling and restarting cleanly.
+              memory: "4Gi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pulsar-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pulsar-data
+  namespace: fyntrac
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulsar
+  namespace: fyntrac
+spec:
+  selector:
+    app: pulsar
+  ports:
+    - name: broker
+      port: 6650
+      targetPort: 6650
+    - name: admin
+      port: 8080
+      targetPort: 8080

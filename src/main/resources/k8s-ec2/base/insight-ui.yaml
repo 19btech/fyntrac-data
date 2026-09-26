@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insight-ui
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insight-ui
+  template:
+    metadata:
+      labels:
+        app: insight-ui
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      containers:
+        - name: insight-ui
+          image: ghcr.io/19btech/fyntrac/docker/fyntrac-insight-ui:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            # Direct to insight backend, bypassing the gateway — matches docker-compose (insight
+            # does its own ZITADEL JWT validation). Browser-facing, so the reachable address.
+            - name: BACKEND_URI
+              value: "http://qa.fyntrac.com:4000"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insight-ui
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: insight-ui
+  ports:
+    - port: 3001
+      targetPort: 80

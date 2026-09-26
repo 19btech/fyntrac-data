@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insight
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: insight
+  template:
+    metadata:
+      labels:
+        app: insight
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      containers:
+        - name: insight
+          image: ghcr.io/19btech/fyntrac/docker/fyntrac-insight:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              value: "4000"
+            - name: NODE_ENV
+              value: production
+            - name: TENANT_ISOLATION
+              value: database
+            - name: CORS_ORIGIN
+              value: "*"
+            - name: MONGODB_PSWD
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: MONGODB_PSWD }
+            # <TENANT> is substituted by the app itself per-request, kept literal here.
+            - name: MONGODB_URI
+              value: "mongodb://root:$(MONGODB_PSWD)@mongodb:27017/<TENANT>_INSIGHT?authSource=admin"
+            - name: TARGET_MONGODB_URI
+              value: "mongodb://root:$(MONGODB_PSWD)@mongodb:27017/<TENANT>?authSource=admin"
+            - name: ZITADEL_ISSUER_URI
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_ISSUER_URI }
+            - name: ZITADEL_PROJECT_ID
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_PROJECT_ID }
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ANTHROPIC_API_KEY }
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 4000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: insight
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: insight
+  ports:
+    - port: 4000
+      targetPort: 4000

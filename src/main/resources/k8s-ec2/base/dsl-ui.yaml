@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dsl-ui
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dsl-ui
+  template:
+    metadata:
+      labels:
+        app: dsl-ui
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      containers:
+        - name: dsl-ui
+          image: ghcr.io/19btech/fyntrac/docker/fyntrac-dsl-ui:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          env:
+            # Browser-facing — nginx just proxies through, but this becomes part of the config
+            # nginx serves; use the same host:port a browser on this machine can actually reach
+            # (the gateway's own LoadBalancer address), not the in-cluster DNS name.
+            - name: GATEWAY_URI
+              value: "http://qa.fyntrac.com:8585"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dsl-ui
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: dsl-ui
+  ports:
+    - port: 3000
+      targetPort: 80

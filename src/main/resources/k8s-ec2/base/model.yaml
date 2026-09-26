@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model
+  template:
+    metadata:
+      labels:
+        app: model
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      # See dataloader.yaml for why: avoids Kubernetes' auto-injected Docker-link-style env vars
+      # (e.g. MEMCACHED_PORT=tcp://ip:port) clobbering this app's own same-named properties.
+      enableServiceLinks: false
+      # See dataloader.yaml: model also has a Pulsar consumer that throws on startup if it can't
+      # subscribe, which crashes the pod — block until Pulsar's admin API reports healthy first.
+      initContainers:
+        - name: wait-for-pulsar
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -T 3 -O /dev/null http://pulsar:8080/admin/v2/brokers/health; do
+                echo "waiting for pulsar to become healthy..."
+                sleep 5
+              done
+              echo "pulsar is healthy"
+      containers:
+        - name: model
+          image: ghcr.io/19btech/fyntrac/docker/model:0.0.4-SNAPSHOT
+          # No local source changes to this module — pulled straight from GHCR (public), same
+          # image docker-compose itself references. Unlike dataloader, this one has no reason
+          # to be a local-only build.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            # This image's JDK (21 GA, 21+35) does not detect the container ("container information
+            # not found"): without these flags it sizes itself from the 20-CPU / 32 GB host --
+            # MaxHeapSize 8.3 GB against a 2Gi memory limit (the kernel OOM-kills the pod before the
+            # heap is ever collected down) and GC/JIT threads plus the virtual-thread carrier pool for
+            # 20 CPUs against the CPU limit (CFS throttling). -Xmx and ActiveProcessorCount pin both
+            # to this pod's limits; keep ActiveProcessorCount equal to limits.cpu. UseG1GC: with one
+            # processor the JVM would otherwise fall back to the serial collector.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx1g -XX:MaxDirectMemorySize=256m -XX:ActiveProcessorCount=1 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SPRING_PULSAR_CLIENT_SERVICE-URL
+              value: pulsar://pulsar:6650
+            - name: MEMCACHED_HOST
+              value: memcached
+            - name: MEMCACHED_PORT
+              value: "11211"
+            - name: ZITADEL_ISSUER_URI
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_ISSUER_URI }
+            - name: MONGODB_PSWD
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: MONGODB_PSWD }
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://root:$(MONGODB_PSWD)@mongodb:27017/master?authSource=admin"
+            # TenantDatasourceConfig (per-tenant Mongo connections, invoked on every request by
+            # TenantFilter) builds its own connection string from these discrete properties —
+            # see dataloader.yaml for the full explanation. Password needs the URL-encoded form
+            # since it's re-parsed as a URI.
+            - name: SPRING_DATA_MONGODB_HOST
+              value: mongodb
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "27017"
+            - name: SPRING_DATA_MONGODB_USERNAME
+              value: root
+            - name: SPRING_DATA_MONGODB_PASSWORD
+              value: "$(MONGODB_PSWD)"
+            - name: SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+              value: admin
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: model
+  ports:
+    - port: 8082
+      targetPort: 8082

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memcached
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+        - name: memcached
+          image: memcached:1.6.18-alpine
+          ports:
+            - containerPort: 11211
+          readinessProbe:
+            tcpSocket:
+              port: 11211
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memcached
+  namespace: fyntrac
+spec:
+  selector:
+    app: memcached
+  ports:
+    - port: 11211
+      targetPort: 11211

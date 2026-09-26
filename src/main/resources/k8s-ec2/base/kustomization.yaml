@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fyntrac
+resources:
+  - mongodb.yaml
+  - memcached.yaml
+  - pulsar.yaml
+  - dataloader.yaml
+  - gateway.yaml
+  - model.yaml
+  - gl.yaml
+  - reporting.yaml
+  - dsl-model.yaml
+  - dsl.yaml
+  - dsl-ui.yaml
+  - insight.yaml
+  - insight-ui.yaml
+  - web.yaml

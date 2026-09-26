@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gl
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gl
+  template:
+    metadata:
+      labels:
+        app: gl
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      # See dataloader.yaml: gl also has a Pulsar consumer that throws on startup if it can't
+      # subscribe, which crashes the pod — block until Pulsar's admin API reports healthy first.
+      initContainers:
+        - name: wait-for-pulsar
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -T 3 -O /dev/null http://pulsar:8080/admin/v2/brokers/health; do
+                echo "waiting for pulsar to become healthy..."
+                sleep 5
+              done
+              echo "pulsar is healthy"
+      containers:
+        - name: gl
+          # No local source changes — pulled straight from GHCR (public), same image
+          # docker-compose itself references.
+          image: ghcr.io/19btech/fyntrac/docker/gl:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            # This image's JDK (21 GA, 21+35) does not detect the container ("container information
+            # not found"): without these flags it sizes itself from the 20-CPU / 32 GB host --
+            # MaxHeapSize 8.3 GB against a 1Gi memory limit (the kernel OOM-kills the pod before the
+            # heap is ever collected down) and GC/JIT threads plus the virtual-thread carrier pool for
+            # 20 CPUs against the CPU limit (CFS throttling). -Xmx and ActiveProcessorCount pin both
+            # to this pod's limits; keep ActiveProcessorCount equal to limits.cpu.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx512m -XX:MaxDirectMemorySize=128m -XX:ActiveProcessorCount=2 -XX:+ExitOnOutOfMemoryError"
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SPRING_PULSAR_CLIENT_SERVICE-URL
+              value: pulsar://pulsar:6650
+            - name: MEMCACHED_HOST
+              value: memcached
+            - name: MEMCACHED_PORT
+              value: "11211"
+            - name: ZITADEL_ISSUER_URI
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_ISSUER_URI }
+            - name: MONGODB_PSWD
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: MONGODB_PSWD }
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://root:$(MONGODB_PSWD)@mongodb:27017/master?authSource=admin"
+            - name: SPRING_DATA_MONGODB_HOST
+              value: mongodb
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "27017"
+            - name: SPRING_DATA_MONGODB_USERNAME
+              value: root
+            - name: SPRING_DATA_MONGODB_PASSWORD
+              value: "$(MONGODB_PSWD)"
+            - name: SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+              value: admin
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              # 2, not 1: GL staging for a Hearst P4 run was CFS-throttled for 160 s at 1 CPU.
+              cpu: "2"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gl
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: gl
+  ports:
+    - port: 8083
+      targetPort: 8083

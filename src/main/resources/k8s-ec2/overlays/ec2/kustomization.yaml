@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: fyntrac
+resources:
+  - ../../base
+# fyntrac-secrets (ZITADEL_ISSUER_URI, MONGODB_PSWD) is deliberately not managed here — it holds
+# real credentials and is created imperatively from ~/.dev_profile via
+# k8s-ec2/overlays/ec2/create-secret.sh, never committed to git.
+
+# Mirrors fyntrac-data's mongo-init.js (copy it here again if that file changes) so the mongodb
+# Deployment in ../../base can mount it without depending on the fyntrac-data repo's checkout path.
+configMapGenerator:
+  - name: mongo-init
+    files:
+      - mongo-init.js
+# Keep the ConfigMap's name literally "mongo-init" (no content-hash suffix). The suffix exists to
+# restart pods when a generated file changes, but mongo-init.js only ever runs when /data/db is
+# empty (docker-entrypoint-initdb.d semantics), so a restart on change buys nothing here -- while
+# the suffix made a targeted `kubectl apply -f k8s-ec2/base/mongodb.yaml` fail to mount the volume
+# (the base references the unhashed name), which took mongodb down for 2 hours on 2026-09-20.
+generatorOptions:
+  disableNameSuffixHash: true
+

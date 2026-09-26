@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reporting
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reporting
+  template:
+    metadata:
+      labels:
+        app: reporting
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      containers:
+        - name: reporting
+          # No local source changes — pulled straight from GHCR (public), same image
+          # docker-compose itself references.
+          image: ghcr.io/19btech/fyntrac/docker/reporting:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            # This image's JDK (21 GA, 21+35) does not detect the container ("container information
+            # not found"): without these flags it sizes itself from the 20-CPU / 32 GB host --
+            # MaxHeapSize 8.3 GB against a 1Gi memory limit (the kernel OOM-kills the pod before the
+            # heap is ever collected down) and GC/JIT threads plus the virtual-thread carrier pool for
+            # 20 CPUs against the CPU limit (CFS throttling). -Xmx and ActiveProcessorCount pin both
+            # to this pod's limits; keep ActiveProcessorCount equal to limits.cpu.
+            # UseG1GC: with one processor the JVM would otherwise fall back to the serial collector.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx512m -XX:MaxDirectMemorySize=128m -XX:ActiveProcessorCount=1 -XX:+UseG1GC -XX:+ExitOnOutOfMemoryError"
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: ZITADEL_ISSUER_URI
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_ISSUER_URI }
+            - name: ZITADEL_PROJECT_ID
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: ZITADEL_PROJECT_ID }
+            - name: MONGODB_PSWD
+              valueFrom:
+                secretKeyRef: { name: fyntrac-secrets, key: MONGODB_PSWD }
+            # reporting's docker-compose entry left Mongo commented out ("Add if needed"), but it
+            # registers the exact same TenantFilter/TenantDatasourceConfig as dataloader/gl/model
+            # (see reporting's own FilterConfig — it's on every request), so it needs these too.
+            - name: SPRING_DATA_MONGODB_HOST
+              value: mongodb
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "27017"
+            - name: SPRING_DATA_MONGODB_USERNAME
+              value: root
+            - name: SPRING_DATA_MONGODB_PASSWORD
+              value: "$(MONGODB_PSWD)"
+            - name: SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+              value: admin
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reporting
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: reporting
+  ports:
+    - port: 8084
+      targetPort: 8084

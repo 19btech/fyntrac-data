@@ -1,0 +1,63 @@
+sudo systemctl status k3s          # is it running
+sudo systemctl restart k3s         # restart the whole cluster
+journalctl -u k3s -f                # tail k3s's own logs (crashes, containerd errors)
+
+Cluster/node health
+
+kubectl get nodes -o wide           # node Ready? kernel/containerd version
+kubectl top nodes                   # CPU/mem usage (needs metrics-server, which k3s bundles)
+kubectl get pods -A                 # everything, every namespace
+kubectl get componentstatuses       # (older API, sometimes useful) control-plane health
+
+Pods — your daily driver
+
+kubectl get pods -n fyntrac -o wide            # READY/STATUS/RESTARTS/IP/NODE at a glance
+kubectl get pods -n fyntrac -w                 # watch live as they change
+kubectl describe pod -n fyntrac <name>         # events, probe failures, exit codes — check FIRST
+kubectl logs -n fyntrac <name>                 # current container's stdout
+kubectl logs -n fyntrac <name> --previous      # last crashed container's log (before it restarted)
+kubectl logs -n fyntrac <name> -f              # follow live
+kubectl logs -n fyntrac -l app=dataloader --all-containers   # by label, across replicas
+kubectl exec -n fyntrac <name> -- sh           # shell into a pod
+kubectl top pods -n fyntrac                    # per-pod CPU/mem
+
+Deployments / rollouts
+
+kubectl get deploy -n fyntrac
+kubectl rollout status deployment/dataloader -n fyntrac     # wait for a rollout to finish
+kubectl rollout restart deployment/dataloader -n fyntrac    # force new pods (picks up new image/secret)
+kubectl rollout history deployment/dataloader -n fyntrac    # past revisions
+kubectl rollout undo deployment/dataloader -n fyntrac       # roll back one revision
+kubectl scale deployment/dataloader -n fyntrac --replicas=1 # scale up/down
+
+Services / networking / load-balancing
+
+kubectl get svc -n fyntrac -o wide
+kubectl get endpoints -n fyntrac dataloader     # which pod IPs are actually backing the Service
+kubectl describe svc -n fyntrac dataloader
+
+Events — the "what just happened" firehose
+
+kubectl get events -n fyntrac --sort-by='.lastTimestamp'
+kubectl get events -n fyntrac -w                # live
+
+Images / containerd (your recurring pain point)
+
+sudo k3s ctr images import
+sudo k3s ctr images ls | grep fyntrac           # what's actually imported into k3s's store
+sudo k3s ctr images import <tar>                # import a docker-saved image (needs sudo, no way around it)
+sudo k3s ctr images rm <image:tag>               # remove a stale imported image
+
+Kustomize (your manifests)
+
+kubectl apply -k k8s-ec2/overlays/ec2             # apply
+kubectl diff -k k8s-ec2/overlays/ec2              # see what WOULD change before applying
+kubectl kustomize k8s-ec2/overlays/ec2             # render the final YAML without applying
+
+Cleanup / reset
+
+kubectl delete pod -n fyntrac -l app=dataloader        # force-restart pods (deployment recreates them)
+kubectl delete pod -n fyntrac --field-selector=status.phase==Failed  # clear dead pods
+sudo /usr/local/bin/k3s-uninstall.sh                    # nuke the whole k3s install (last resort)
+
+Most useful single habit: kubectl get pods -n fyntrac -o wide then kubectl describe pod <name> the moment anything isn't Running/Ready — the Events: section at the bottom of describe is where 90% of the answer lives (image pull errors, probe failures, OOMKilled, etc.), same as what I've been reading throughout this session.

@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dataloader
+  namespace: fyntrac
+spec:
+  # 2 replicas so a LoadBalancer Service actually has something to balance across —
+  # see docs/K8S_SCALING_STRATEGY.md for what this does and doesn't parallelize today.
+  # EC2: 1 replica. A run is owned by one dataloader pod, so a 2nd adds no single-run speed,
+  # and on a single node it gives no real failover either (it only doubles mongo connections).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dataloader
+  template:
+    metadata:
+      labels:
+        app: dataloader
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      # Kubernetes injects legacy Docker-link-style env vars for every Service in this namespace
+      # (SVCNAME_PORT=tcp://ip:port, etc.). application-dev.properties' memcached.port=11211 gets
+      # silently clobbered by an auto-injected MEMCACHED_PORT=tcp://... — Spring env vars win over
+      # properties-file values — which crashed the app trying to parse that URL as an int. Turning
+      # this off avoids that whole class of collision for any current or future service name.
+      enableServiceLinks: false
+      # Pulsar has no native "start after X is healthy" ordering in Kubernetes, and
+      # ExecuteAggregationConsumer.init() throws if it can't subscribe at startup — which
+      # crashes the whole pod. This blocks until Pulsar's admin API reports healthy first.
+      initContainers:
+        - name: wait-for-pulsar
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -T 3 -O /dev/null http://pulsar:8080/admin/v2/brokers/health; do
+                echo "waiting for pulsar to become healthy..."
+                sleep 5
+              done
+              echo "pulsar is healthy"
+      containers:
+        - name: dataloader
+          image: ghcr.io/19btech/fyntrac/docker/dataloader:0.0.4-SNAPSHOT
+          # Built locally via `./gradlew dockerBuildImage` (tags to this name/version per
+          # dataloader/build.gradle's docker{} block) and `k3s ctr images import`-ed directly
+          # into containerd, not pulled from a registry. IfNotPresent uses that local image
+          # without k3s trying to reach ghcr — same pattern as gl.yaml.
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            # The openjdk:21 base image is the frozen JDK 21 GA build, whose cgroup-v2 detection
+            # fails when the container's cgroup path is "/" (as under k3s here) — the JVM then sizes
+            # its heap off the HOST's RAM (MaxHeapSize came out at 7.75Gi inside this 4Gi pod) and
+            # never feels memory pressure before the kernel OOM-kills the container. Pin the heap
+            # explicitly; live heap measured at ~70Mi after GC with ~1.5Gi committed peaks, so 2g
+            # leaves room for metaspace (~140Mi), 180+ thread stacks and native allocations.
+            # MaxDirectMemorySize caps Netty (Pulsar client) buffers, which otherwise default to the
+            # heap size. ExitOnOutOfMemoryError restarts the pod on a real heap OOME instead of
+            # leaving a wedged JVM serving 5xx.
+            # ActiveProcessorCount must match limits.cpu below: this image's JDK (21 GA, 21+35)
+            # does not detect the container's CPU limit ("container information not found") and
+            # sizes GC/JIT threads and the virtual-thread carrier pool for all 20 host CPUs. Under
+            # the old 1-CPU limit that ~20-way JVM was CFS-throttled in 41% of periods (~39 min
+            # over one Hearst P4 run); with the limit and this flag both at 4 it is ~0.5%.
+            - name: JAVA_TOOL_OPTIONS
+              value: "-Xmx2g -XX:MaxDirectMemorySize=512m -XX:+ExitOnOutOfMemoryError -XX:ActiveProcessorCount=4"
+            # glibc creates up to 8 arenas per core (160 on this 20-core host) for the JVM's 180+
+            # threads; freed native memory then fragments across arenas instead of being reused.
+            # Measured: ~2.1Gi of RSS in 64Mi-aligned anonymous mappings with only ~70Mi live heap,
+            # creeping toward the 4Gi limit over a few hours of uploads. 2 is the standard cap.
+            - name: MALLOC_ARENA_MAX
+              value: "2"
+            - name: SPRING_PROFILES_ACTIVE
+              value: dev
+            - name: SPRING_PULSAR_CLIENT_SERVICE-URL
+              value: pulsar://pulsar:6650
+            # application-dev.properties defaults memcached.host to "localhost" (fine for a
+            # native run, wrong pod-to-pod) — point it at the memcached Service instead.
+            - name: MEMCACHED_HOST
+              value: memcached
+            - name: MEMCACHED_PORT
+              value: "11211"
+            # How many model-execution batches ExcelModelService keeps in flight at once
+            # (fyntrac.batch.max-concurrent-dispatch). Each dsl-model pod works one batch at a
+            # time and (since receiver_queue_size=1 on its consumer) is only handed a message
+            # when it is ready, so keep this at ~2x dsl-model.yaml's `replicas`: one batch
+            # executing per pod plus one waiting at the broker, which stops pods idling between
+            # batches (measured at 4/4: only ~2.4 pods busy on average). Each queued batch waits
+            # at most one batch duration (~40s), well inside BatchCompletionWaiter's 10 minutes.
+            # Raised 8 -> 16: a dispatch slot is also held through the batch's attribute/instrument
+            # LTD aggregation (~0.5-3s) after the model finishes, which at ~5s model batches left
+            # only 3.0-3.4 of 4 dsl-model pods busy while ready batches queued; at 16 they are
+            # 3.9+/4 busy (Hearst P4, 2026-09-23).
+            # EC2: 12 = 2 x dsl-model's 6 replicas (use 14 if dsl-model goes to 7).
+            - name: FYNTRAC_BATCH_MAX_CONCURRENT_DISPATCH
+              value: "12"
+            - name: ZITADEL_ISSUER_URI
+              valueFrom:
+                secretKeyRef:
+                  name: fyntrac-secrets
+                  key: ZITADEL_ISSUER_URI
+            - name: MONGODB_PSWD
+              valueFrom:
+                secretKeyRef:
+                  name: fyntrac-secrets
+                  key: MONGODB_PSWD
+            - name: SPRING_DATA_MONGODB_URI
+              value: "mongodb://root:$(MONGODB_PSWD)@mongodb:27017/master?authSource=admin"
+            # TenantDatasourceConfig (per-tenant Mongo connections, invoked on every request by
+            # TenantFilter) builds its own connection string from these discrete properties —
+            # separate from spring.data.mongodb.uri above — and none of them were set, so Spring
+            # Boot's defaults (host=localhost) applied and every request tried to reach Mongo on
+            # the pod's own loopback interface. It hand-builds a URI string itself and re-parses
+            # it, so the password here needs the URL-encoded form (MONGODB_PSWD), not the raw one.
+            - name: SPRING_DATA_MONGODB_HOST
+              value: mongodb
+            - name: SPRING_DATA_MONGODB_PORT
+              value: "27017"
+            - name: SPRING_DATA_MONGODB_USERNAME
+              value: root
+            - name: SPRING_DATA_MONGODB_PASSWORD
+              value: "$(MONGODB_PSWD)"
+            - name: SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+              value: admin
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "2"
+              memory: "1.5Gi"
+            limits:
+              # 4, not 1: a run's event generation and per-batch aggregation all run in one pod,
+              # and at 1 CPU it was the throttled bottleneck (event-gen ~280 -> ~800-980
+              # instruments/s at 4). Keep in step with -XX:ActiveProcessorCount above.
+              cpu: "4"
+              # Bumped from 2Gi: both replicas got OOMKilled (exit 137) mid-test after more
+              # posting-date activity data was added to the Hearst test case — the larger
+              # event-generation/aggregation working set for a heavier run exceeded the old
+              # limit. Host has 30Gi total with room to spare for this local dev cluster.
+              memory: "4Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dataloader
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: dataloader
+  ports:
+    - port: 8081
+      targetPort: 8081

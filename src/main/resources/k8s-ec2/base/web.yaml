@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: fyntrac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      imagePullSecrets:
+        - name: ghcr-creds
+      enableServiceLinks: false
+      containers:
+        - name: web
+          image: ghcr.io/19btech/fyntrac/docker/web:0.0.4-SNAPSHOT
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3030
+          env:
+            # NEXT_PUBLIC_* vars are baked into client-side JS and fetched by the browser
+            # directly — they need addresses a browser on this machine can reach (the
+            # LoadBalancer ports), not in-cluster DNS names.
+            - name: NEXT_PUBLIC_GATEWAY_URI
+              value: "http://qa.fyntrac.com:8585"
+            - name: NEXT_PUBLIC_TENANT
+              value: Test
+            - name: NEXT_PUBLIC_DSL_STUDIO_URL
+              value: "http://qa.fyntrac.com:3000"
+            - name: NEXT_PUBLIC_INSIGHT_URL
+              value: "http://qa.fyntrac.com:3001"
+          # docker-compose's healthcheck targeted /health, but no such route exists anywhere in
+          # fyntrac-web's source — Docker healthchecks don't restart containers by default so
+          # this was silently never actually working there. k8s's liveness probe does restart on
+          # failure, which is what surfaced it (repeated 404 -> kill loop). Root path instead.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3030
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3030
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  namespace: fyntrac
+spec:
+  type: LoadBalancer
+  selector:
+    app: web
+  ports:
+    - port: 3030
+      targetPort: 3030
