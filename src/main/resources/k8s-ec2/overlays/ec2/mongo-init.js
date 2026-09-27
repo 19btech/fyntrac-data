@@ -66,7 +66,24 @@ const USERS = [
         firstName: "Behram",
         lastName: "Khan",
         email: "BehramHkhan@gmail.com"
+    },
+    {
+        _id: ObjectId("6aa320d2e6fb38658923d4ec"),
+        username: "azafar",
+        firstName: "Asad",
+        lastName: "Zafar",
+        email: "asaduzzafar@gmail.com"
     }
+];
+
+// ============================================
+// CLIENT TENANTS (assigned to ALL users)
+// ============================================
+// Fixed IDs in their own "71..." range so they never collide with generateTenantId()'s "70..." range.
+const CLIENT_TENANT_PREFIX = "HEARST_SANDBOX_";
+const CLIENT_TENANT_CODES = [
+    "DSH", "CLG", "RUN", "COS", "MHL", "POP", "GHK", "OMC", "TOC", "HBU",
+    "ESQ", "WHL", "BIC", "PRE", "EDC", "HAR", "ROA", "VER", "ELM", "CDB"
 ];
 
 // ============================================
@@ -140,6 +157,32 @@ USERS.forEach(user => {
 print("✅ Private tenants inserted");
 
 // ============================================
+// INSERT CLIENT TENANTS
+// ============================================
+print("🚀 Inserting client tenants...");
+
+const clientTenantUsers = USERS; // ALL USERS
+
+CLIENT_TENANT_CODES.forEach((code, index) => {
+    const tenantId = ObjectId("71" + (index + 1).toString().padStart(22, "0"));
+
+    clientTenantUsers.forEach(user => user.tenantIds.push(tenantId));
+
+    db.tenants.insertOne({
+        _id: tenantId,
+        tenantCode: CLIENT_TENANT_PREFIX + code,
+        name: CLIENT_TENANT_PREFIX + code,
+        merchantId: MERCHANT_ID,
+        userIds: clientTenantUsers.map(u => u._id),
+        status: "ACTIVE",
+        createdAt: new Date(),
+        updatedAt: new Date()
+    });
+});
+
+print("✅ Client tenants inserted");
+
+// ============================================
 // INSERT USERS
 // ============================================
 print("🚀 Inserting users...");
@@ -170,5 +213,6 @@ print("--------------------------------------------------");
 print("Users: " + USERS.length);
 print("Shared Tenants: 4");
 print("Private Tenants per user: 3");
-print("Total Tenants: " + (4 + USERS.length * 3));
+print("Client Tenants: " + CLIENT_TENANT_CODES.length);
+print("Total Tenants: " + (4 + USERS.length * 3 + CLIENT_TENANT_CODES.length));
 print("--------------------------------------------------");
