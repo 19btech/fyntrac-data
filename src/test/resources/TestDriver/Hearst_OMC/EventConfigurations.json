@@ -269,8 +269,8 @@
           "value": "INVOICE"
         },
         {
-          "label": "CREDITNOTE",
-          "value": "CREDITNOTE"
+          "label": "CREDIT NOTE",
+          "value": "CREDIT NOTE"
         }
       ],
       "fieldType": "NONE"
