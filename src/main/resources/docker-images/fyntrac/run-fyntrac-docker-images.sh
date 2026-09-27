@@ -37,6 +37,8 @@ if [ -z "$VERSION" ]; then
 fi
 
 log_info "Using version: $VERSION"
+# The compose file tags its images with FYNTRAC_VERSION; keep it in step with what is pulled below.
+export FYNTRAC_VERSION="$VERSION"
 
 # Map component names to containers and images
 declare -A container_map=(
