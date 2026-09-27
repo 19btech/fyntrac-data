@@ -11,6 +11,11 @@ x-tenant-mongo: &tenant-mongo
   SPRING_DATA_MONGODB_PASSWORD: ${MONGODB_PSWD:-R3s3rv%23313}
   SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE: admin
 
+# Without these the Java services default to localhost:11211, i.e. the container itself.
+x-memcached: &memcached
+  MEMCACHED_HOST: ${MEMCACHED_HOST:-memcached}
+  MEMCACHED_PORT: ${MEMCACHED_PORT:-11211}
+
 services:
   dataloader:
     image: ghcr.io/19btech/fyntrac/docker/dataloader:${FYNTRAC_VERSION:-0.0.4-SNAPSHOT}
@@ -24,7 +29,7 @@ services:
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       SPRING_DATA_MONGODB_URI: mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:27017/master?authSource=admin
-      <<: *tenant-mongo
+      <<: [*tenant-mongo, *memcached]
     extra_hosts:
       - "localhost:host-gateway" # Force localhost hits to find the mongodb container
     healthcheck:
@@ -51,7 +56,7 @@ services:
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       SPRING_DATA_MONGODB_URI: mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:27017/master?authSource=admin
-      <<: *tenant-mongo
+      <<: [*tenant-mongo, *memcached]
     extra_hosts:
       - "localhost:host-gateway"
     healthcheck:
@@ -110,7 +115,7 @@ services:
       SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       SPRING_DATA_MONGODB_URI: mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:27017/master?authSource=admin
-      <<: *tenant-mongo
+      <<: [*tenant-mongo, *memcached]
     extra_hosts:
       - "localhost:host-gateway"
     healthcheck:
@@ -135,6 +140,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: test
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
+      ZITADEL_PROJECT_ID: ${ZITADEL_PROJECT_ID}
       # Add Pulsar if needed: SPRING_PULSAR_CLIENT_SERVICE-URL: pulsar://pulsar:6650
       SPRING_DATA_MONGODB_URI: mongodb://root:${MONGODB_PSWD:-R3s3rv%23313}@mongodb:27017/master?authSource=admin
       <<: *tenant-mongo
