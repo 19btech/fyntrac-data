@@ -175,7 +175,9 @@ services:
       ZITADEL_ISSUER_URI: ${ZITADEL_ISSUER_URI}
       ZITADEL_PROJECT_ID: ${ZITADEL_PROJECT_ID}
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8585/actuator/health"]
+      # The published image is jib-built on openjdk:21 (curl, no wget); the Dockerfile build is alpine with
+      # wget only. Try both so either image can pass.
+      test: ["CMD-SHELL", "curl -fs http://localhost:8585/actuator/health || wget -qO- http://localhost:8585/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 5
