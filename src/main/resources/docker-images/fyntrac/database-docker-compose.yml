@@ -21,7 +21,13 @@ services:
         hard: 64000
 
     # 2. OPTIONAL BUT RECOMMENDED: Limit WiredTiger cache so it doesn't fight your VM's RAM
-    command: mongod --wiredTigerCacheSizeGB 1.5
+    # 3. Cap the classic plan cache per collection (default 5000 entries grew to ~3.4GB on a Hearst
+    #    case) and return freed memory to the OS (8.x tcmallocReleaseRate is bytes/sec, default 0).
+    command: >-
+      mongod --wiredTigerCacheSizeGB 1.5
+      --setParameter internalQueryCacheMaxEntriesPerCollection=100
+      --setParameter internalQueryCacheMaxSizeBytesBeforeStripDebugInfo=67108864
+      --setParameter tcmallocReleaseRate=20971520
 
     healthcheck:
       test: ["CMD", "mongosh", "-u", "root", "-p", "R3s3rv#313", "--eval", "db.adminCommand('ping')"]
