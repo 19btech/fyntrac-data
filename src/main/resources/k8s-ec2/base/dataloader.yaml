@@ -66,7 +66,7 @@ spec:
             # the old 1-CPU limit that ~20-way JVM was CFS-throttled in 41% of periods (~39 min
             # over one Hearst P4 run); with the limit and this flag both at 4 it is ~0.5%.
             - name: JAVA_TOOL_OPTIONS
-              value: "-Xmx2g -XX:MaxDirectMemorySize=512m -XX:+ExitOnOutOfMemoryError -XX:ActiveProcessorCount=4"
+              value: "-Xmx3g -XX:MaxDirectMemorySize=512m -XX:+ExitOnOutOfMemoryError -XX:ActiveProcessorCount=4"
             # glibc creates up to 8 arenas per core (160 on this 20-core host) for the JVM's 180+
             # threads; freed native memory then fragments across arenas instead of being reused.
             # Measured: ~2.1Gi of RSS in 64Mi-aligned anonymous mappings with only ~70Mi live heap,
@@ -151,7 +151,9 @@ spec:
               # posting-date activity data was added to the Hearst test case — the larger
               # event-generation/aggregation working set for a heavier run exceeded the old
               # limit. Host has 30Gi total with room to spare for this local dev cluster.
-              memory: "4Gi"
+              # 4Gi -> 5Gi with -Xmx2g -> -Xmx3g: Excel uploads are loaded whole into heap; a 108.5MB
+              # sheet (Hearst DSH_SOD_20260731) needs ~1.56GB on its own, too close to a 2g heap.
+              memory: "5Gi"
 ---
 apiVersion: v1
 kind: Service
