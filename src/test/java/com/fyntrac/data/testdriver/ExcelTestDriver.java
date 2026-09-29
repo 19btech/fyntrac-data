@@ -88,7 +88,7 @@ public class ExcelTestDriver {
         properties.load(propertiesFileStram);
 
         // Load required property
-        tenantId = properties.getProperty(TEST_TENANT_ID_PROPERTY_NAME);
+        tenantId = resolveSetting("tenantId", TEST_TENANT_ID_PROPERTY_NAME, "");
         if (tenantId == null || tenantId.isEmpty()) {
             throw new IllegalStateException("Missing required property: " + TEST_TENANT_ID_PROPERTY_NAME);
         }
