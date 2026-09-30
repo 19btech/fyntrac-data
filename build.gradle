@@ -92,11 +92,15 @@ tasks.named('test') {
 	// Optional per-run overrides of test.properties (see ExcelTestDriver.setUp):
 	//   -PtestSteps=Test_P2.xlsx   step workbook inside the testData folder
 	//   -PresetDb=false            continue on the tenant's existing data instead of dropping it
+	//   -PtenantId=TNT004          run against this tenant instead of test.tenantId
 	if (project.hasProperty('testSteps')) {
 		systemProperty 'testSteps', project.testSteps
 	}
 	if (project.hasProperty('resetDb')) {
 		systemProperty 'resetDb', project.resetDb
+	}
+	if (project.hasProperty('tenantId')) {
+		systemProperty 'tenantId', project.tenantId
 	}
 
 	// Enable debug when system property is passed
