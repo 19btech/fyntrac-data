@@ -17,6 +17,8 @@ import com.fyntrac.common.service.DataService;
 import com.fyntrac.common.service.GenericJsonImportService;
 import com.fyntrac.data.testdriver.validator.OutputSheetValidator;
 import org.apache.poi.ss.usermodel.*;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +29,8 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -135,6 +139,10 @@ public class ExcelTestDriver {
     }
 
     private void executeSteps() throws Throwable {
+        // Errors are logged by the services, not returned to the driver: a failed event-generation
+        // batch still answers the step with HTTP 200. Scope the check to this run so a continuation
+        // piece of a split scenario isn't failed by what an earlier piece logged.
+        ObjectId runStart = new ObjectId(new Date());
         String testFile = String.format("%s/%s", testData, stepsFile);
         InputStream fileStream = this.readFile(testFile);
         List<Records.ExcelTestStepRecord> steps = readTestSteps(fileStream);
@@ -153,6 +161,7 @@ public class ExcelTestDriver {
 
         //Validate output
         MongoTemplate mongoTemplate =  this.dataSourceProvider.getDataSource(tenantId);
+        assertNoErrorsLogged(mongoTemplate, runStart);
 
         OutputSheetValidator outputSheetValidator = new OutputSheetValidator(mongoTemplate);
         try {
@@ -160,6 +169,20 @@ public class ExcelTestDriver {
         }catch (Exception e){ // Catch Exception instead of RuntimeException to catch checked exceptions from validate()
             Assertions.fail("Data comparision failed: " + e.getMessage(), e);
         }
+    }
+
+    private void assertNoErrorsLogged(MongoTemplate mongoTemplate, ObjectId runStart) {
+        Query query = new Query(Criteria.where("_id").gte(runStart).and("isWarning").ne(true));
+        List<Document> errors = mongoTemplate.find(query, Document.class, "Errors");
+        if (errors.isEmpty()) {
+            return;
+        }
+        StringBuilder summary = new StringBuilder();
+        for (Document error : errors) {
+            summary.append(String.format("%n  [%s] executionDate=%s jobId=%s: %s",
+                    error.getString("code"), error.get("executionDate"), error.getString("jobId"), error.getString("message")));
+        }
+        Assertions.fail(String.format("%d error(s) logged to %s.Errors during the run:%s", errors.size(), tenantId, summary));
     }
 
     private void executeStep(Records.ExcelTestStepRecord step) throws Throwable {
